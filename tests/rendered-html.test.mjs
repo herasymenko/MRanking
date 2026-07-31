@@ -16,6 +16,7 @@ const applicationSources = [
   "../app/components/modes/ModeView.tsx",
   "../app/components/modes/WheelLibraryView.tsx",
   "../app/components/packs/MusicSourceChooser.tsx",
+  "../app/components/packs/constants.ts",
   "../app/components/packs/PackEditor.tsx",
   "../app/components/packs/PackLibraryView.tsx",
   "../app/components/packs/ProfilePlaylistPicker.tsx",
@@ -106,9 +107,12 @@ test("client includes the private playlist-to-tournament flow", async () => {
   assert.match(source, /MUSIC_SERVICE_TILES/);
   assert.match(source, /\/api\/spotify/);
   assert.match(source, /\/api\/yandex-music/);
+  assert.match(source, /\/api\/apple-music/);
+  assert.match(source, /id: "apple"/);
   assert.match(source, /mediaEmbedUrl/);
   assert.match(source, /open\.spotify\.com\/embed\/track/);
   assert.match(source, /music\.yandex\.ru\/iframe\/track/);
+  assert.match(source, /embed\.music\.apple\.com/);
   assert.match(source, /\/api\/youtube/);
   assert.match(source, /data\.kind === "profile"/);
   assert.match(source, /function ProfilePlaylistPicker/);
@@ -375,10 +379,11 @@ test("YouTube importer handles current and classic playlist renderers", async ()
   assert.match(importer, /collectMusicProfilePages/);
 });
 
-test("Spotify and Yandex Music import public playlists", async () => {
-  const [spotify, yandex, packs, types] = await Promise.all([
+test("Spotify, Yandex Music and Apple Music import public playlists", async () => {
+  const [spotify, yandex, apple, packs, types] = await Promise.all([
     readFile(new URL("../lib/spotify.ts", import.meta.url), "utf8"),
     readFile(new URL("../lib/yandex-music.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/apple-music.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/packs/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../lib/types.ts", import.meta.url), "utf8"),
   ]);
@@ -393,7 +398,11 @@ test("Spotify and Yandex Music import public playlists", async () => {
   assert.doesNotMatch(yandex, /skippedItems/);
   assert.match(yandex, /users\/.*playlists/);
   assert.match(yandex, /playlist\//);
-  assert.match(packs, /"spotify", "yandexMusic"/);
+  assert.match(apple, /serialized-server-data/);
+  assert.match(apple, /schema:music-playlist/);
+  assert.match(apple, /sourceType: "appleMusic"/);
+  assert.match(packs, /"appleMusic"/);
   assert.match(types, /\| "spotify"/);
   assert.match(types, /\| "yandexMusic"/);
+  assert.match(types, /\| "appleMusic"/);
 });

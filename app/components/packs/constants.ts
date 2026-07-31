@@ -28,6 +28,7 @@ export const MUSIC_SERVICE_TILES = [
   },
   { id: "spotify", title: "Spotify", icon: "●", live: true },
   { id: "yandex", title: "Yandex Music", icon: "Я", live: true },
+  { id: "apple", title: "Apple Music", icon: "♪", live: true },
 ] as const;
 
 export type MusicSource = (typeof MUSIC_SERVICE_TILES)[number]["id"];

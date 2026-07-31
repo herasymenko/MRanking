@@ -6,7 +6,8 @@ export type SourceType =
   | "youtube"
   | "youtubeMusic"
   | "spotify"
-  | "yandexMusic";
+  | "yandexMusic"
+  | "appleMusic";
 
 export type User = {
   id: string;

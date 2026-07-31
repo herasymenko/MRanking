@@ -46,6 +46,7 @@ export const RU_TRANSLATIONS: Record<string, string> = {
     "Select where your playlist lives.": "Выбери, где находится твой плейлист.",
     "YouTube / YouTube Music": "YouTube / YouTube Music",
     "Yandex Music": "Яндекс Музыка",
+    "Apple Music": "Apple Music",
     "Image Collection": "Коллекция изображений",
     "Text / CSV List": "Текст / CSV",
     "Spotify Playlist": "Плейлист Spotify",
@@ -58,6 +59,8 @@ export const RU_TRANSLATIONS: Record<string, string> = {
     "Use a public Spotify playlist.": "Используй публичный плейлист Spotify.",
     "Use a public Yandex Music playlist.":
       "Используй публичный плейлист Яндекс Музыки.",
+    "Use a public Apple Music playlist.":
+      "Используй публичный плейлист Apple Music.",
     "Read link": "Прочитать ссылку",
     "Back to link": "Назад к ссылке",
     "Back to playlists": "Назад к плейлистам",
@@ -280,6 +283,24 @@ export const RU_TRANSLATIONS: Record<string, string> = {
       "Spotify вернул нечитаемый плейлист",
     "The Spotify playlist is private, unavailable or contains no playable tracks":
       "Плейлист Spotify приватный, недоступен или не содержит доступных треков",
+    "Paste an Apple Music playlist URL":
+      "Вставь ссылку на плейлист Apple Music",
+    "Paste a valid Apple Music playlist URL":
+      "Вставь корректную ссылку на плейлист Apple Music",
+    "Only Apple Music links are supported here":
+      "Здесь поддерживаются только ссылки Apple Music",
+    "This link does not contain an Apple Music playlist":
+      "В этой ссылке нет плейлиста Apple Music",
+    "The Apple Music playlist was not found":
+      "Плейлист Apple Music не найден",
+    "Apple Music did not return this playlist":
+      "Apple Music не отдал этот плейлист",
+    "Apple Music did not return playlist tracks":
+      "Apple Music не отдал треки плейлиста",
+    "Apple Music returned an unreadable playlist":
+      "Apple Music вернул нечитаемый плейлист",
+    "The Apple Music playlist is private, unavailable or contains no playable tracks":
+      "Плейлист Apple Music приватный, недоступен или не содержит доступных треков",
     "Paste a valid Yandex Music playlist URL":
       "Вставь корректную ссылку на плейлист Яндекс Музыки",
     "Only Yandex Music links are supported here":

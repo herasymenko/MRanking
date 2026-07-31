@@ -58,6 +58,9 @@ export function sourceName(sourceType: SourceType) {
   if (sourceType === "yandexMusic") {
     return "Yandex Music";
   }
+  if (sourceType === "appleMusic") {
+    return "Apple Music";
+  }
   return "YouTube";
 }
 
@@ -67,6 +70,19 @@ export function mediaEmbedUrl(sourceType: SourceType, item: PackItem) {
   }
   if (sourceType === "yandexMusic") {
     return `https://music.yandex.ru/iframe/track/${encodeURIComponent(item.videoId)}`;
+  }
+  if (sourceType === "appleMusic") {
+    try {
+      const url = new URL(item.youtubeUrl);
+      if (url.hostname === "music.apple.com") {
+        url.hostname = "embed.music.apple.com";
+      }
+      return url.hostname === "embed.music.apple.com"
+        ? url.toString()
+        : "https://embed.music.apple.com/";
+    } catch {
+      return "https://embed.music.apple.com/";
+    }
   }
   return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(item.videoId)}?autoplay=1&rel=0`;
 }

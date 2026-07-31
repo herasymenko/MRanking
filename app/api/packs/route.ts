@@ -192,7 +192,13 @@ function validatePack(body: PackPayload) {
   }
   if (
     !body.sourceType ||
-    !["youtube", "youtubeMusic", "spotify", "yandexMusic"].includes(
+    ![
+      "youtube",
+      "youtubeMusic",
+      "spotify",
+      "yandexMusic",
+      "appleMusic",
+    ].includes(
       body.sourceType,
     )
   ) {

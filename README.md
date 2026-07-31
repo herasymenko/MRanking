@@ -17,12 +17,12 @@ Create an account from the sign-in window using any available nickname and a pas
 ## Current flow
 
 1. Create an account or sign in.
-2. Open **Packs** and choose YouTube or YouTube Music.
-3. Paste a public/unlisted playlist link, or a public profile link and choose one of its playlists.
-4. Review the imported videos, edit the pack name or cover, and select the items that should stay.
+2. Open **Upload pack** and choose YouTube, YouTube Music, Spotify, Yandex Music or Apple Music.
+3. Paste a public playlist link. YouTube also supports profile links with playlist selection.
+4. Review the imported tracks, edit the pack name or cover, and select the items that should stay.
 5. Save a private pack and start **King of the Hill**.
 
-At least 16 playable videos are required. Duplicate, private, deleted and unavailable entries are skipped and reported. Imported packs, in-progress games and final results persist in local SQLite storage.
+At least 16 playable items are required. Duplicate, private, deleted and unavailable entries are skipped during import. Imported packs, in-progress games and final results persist in local SQLite storage.
 
 Tier List, Blind Ranking and the other rating formats are visual placeholders for later development.
 

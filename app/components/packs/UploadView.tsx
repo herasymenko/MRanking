@@ -36,6 +36,8 @@ export function UploadView({
         ? "spotify"
         : editable.sourceType === "yandexMusic"
           ? "yandex"
+          : editable.sourceType === "appleMusic"
+            ? "apple"
           : "youtube"
       : null,
   );
@@ -77,6 +79,8 @@ export function UploadView({
           ? "/api/spotify"
           : source === "yandex"
             ? "/api/yandex-music"
+            : source === "apple"
+              ? "/api/apple-music"
             : "/api/youtube";
       const data = await api<YouTubeImportResult>(endpoint, {
         method: "POST",
@@ -132,9 +136,17 @@ export function UploadView({
       ? "Spotify"
       : source === "yandex"
         ? "Yandex Music"
+        : source === "apple"
+          ? "Apple Music"
         : "YouTube / YouTube Music";
   const serviceIcon =
-    source === "spotify" ? "●" : source === "yandex" ? "Я" : "▶";
+    source === "spotify"
+      ? "●"
+      : source === "yandex"
+        ? "Я"
+        : source === "apple"
+          ? "♪"
+          : "▶";
   const servicePrompt =
     source === "youtube"
       ? "Paste playlist or profile link"
@@ -144,12 +156,16 @@ export function UploadView({
       ? "Use a public Spotify playlist."
       : source === "yandex"
         ? "Use a public Yandex Music playlist."
+        : source === "apple"
+          ? "Use a public Apple Music playlist."
         : "Use a public playlist or profile from YouTube or YouTube Music.";
   const servicePlaceholder =
     source === "spotify"
       ? "https://open.spotify.com/playlist/..."
       : source === "yandex"
         ? "https://music.yandex.ru/users/.../playlists/..."
+        : source === "apple"
+          ? "https://music.apple.com/us/playlist/.../pl...."
         : "https://youtube.com/@profile or https://music.youtube.com/@profile";
 
   if (editable) {
