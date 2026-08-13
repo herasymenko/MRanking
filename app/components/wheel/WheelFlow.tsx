@@ -81,6 +81,7 @@ export function WheelFlow({
       onUpload={onUpload}
       onStart={(pack) => onStart(pack)}
       onContinue={(pack) => onStart(pack, true)}
+      onCancelRun={onCancel}
       onOpenResult={onViewedResult}
       onDeleteResult={onDeleteResult}
     />

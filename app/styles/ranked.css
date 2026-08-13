@@ -10,13 +10,13 @@
 .topbar-game-handle:hover { border-color: var(--acid); color: var(--paper); }
 
 .app-shell:has(.ranked-game-view) > footer { display: none; }
-.ranked-game-view { height: 100dvh; min-height: 0; padding: 44px clamp(20px,3vw,56px) 16px; position: relative; overflow: hidden; background: radial-gradient(circle at 20% 18%,#24203a 0,#10120f 34%,#080909 72%); transition: padding-top .24s cubic-bezier(.2,.8,.2,1); }
+.ranked-game-view { height: 100dvh; min-height: 0; padding: 44px clamp(20px,3vw,56px) 20px; position: relative; display: flex; flex-direction: column; overflow: hidden; background: radial-gradient(circle at 20% 18%,#24203a 0,#10120f 34%,#080909 72%); transition: padding-top .24s cubic-bezier(.2,.8,.2,1); }
 .app-shell:has(.topbar-game.open) .ranked-game-view,.app-shell:has(.topbar-game:hover) .ranked-game-view { padding-top: 148px; }
 .ranked-game-view::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .12; background-image: linear-gradient(#7f789a55 1px,transparent 1px),linear-gradient(90deg,#7f789a55 1px,transparent 1px); background-size: 68px 68px; mask-image: linear-gradient(90deg,#000,transparent 75%); }
 .ranked-game-view > * { position: relative; z-index: 1; }
 .ranked-game-header { width: min(100%,1800px); min-height: 76px; margin: 0 auto; padding: 0 0 9px; border-bottom: 1px solid #3a3b41; display: grid; grid-template-columns: minmax(330px,1fr) auto auto; align-items: end; gap: 20px; }
-.ranked-game-header > div:first-child { min-width: 0; padding-left: 140px; }
-.ranked-game-view .ranked-game-header h2 { margin: 5px 0 0; font: 900 clamp(32px,2.7vw,46px)/.88 var(--font-display); text-transform: uppercase; }
+.ranked-game-header > div:first-child { min-width: 0; padding-left: 140px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.ranked-game-view .ranked-game-header h2 { margin: 0; font: 900 clamp(32px,2.7vw,46px)/.88 var(--font-display); text-transform: uppercase; }
 .ranked-phase { width: fit-content; min-height: 34px; padding: 0 16px; display: inline-flex; align-items: center; border: 1px solid #8175a4; border-radius: 7px; background: linear-gradient(135deg,#302944,#1c1926); box-shadow: inset 0 0 18px #a48cff12,0 0 20px #8f75ff12; color: #ded5ff; font-size: 14px; font-weight: 950; letter-spacing: .065em; line-height: 1; white-space: nowrap; text-transform: uppercase; }
 .ranked-game-meta { min-width: 175px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .ranked-game-meta span { max-width: 270px; color: #999ea0; font-size: 10px; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -32,8 +32,7 @@
 .ranked-progress::-webkit-progress-value { background: linear-gradient(90deg,var(--violet),var(--acid)); transition: width .35s ease; }
 .ranked-progress::-moz-progress-bar { background: linear-gradient(90deg,var(--violet),var(--acid)); }
 
-.ranked-workspace { width: min(100%,1800px); height: calc(100dvh - 184px); margin: 0 auto; display: grid; grid-template-columns: minmax(390px,.72fr) minmax(620px,1.28fr) minmax(136px,158px); grid-template-areas: "order player board"; gap: 16px; align-items: stretch; transition: grid-template-columns .25s ease,height .24s ease; }
-.app-shell:has(.topbar-game.open) .ranked-workspace,.app-shell:has(.topbar-game:hover) .ranked-workspace { height: calc(100dvh - 288px); }
+.ranked-workspace { width: min(100%,1800px); height: auto; min-height: 0; flex: 1 1 auto; margin: 0 auto; display: grid; grid-template-columns: minmax(390px,.72fr) minmax(620px,1.28fr) minmax(136px,158px); grid-template-areas: "order player board"; gap: 16px; align-items: stretch; transition: grid-template-columns .25s ease,height .24s ease; }
 .ranked-workspace.top-open { grid-template-columns: minmax(350px,.72fr) minmax(500px,1.08fr) minmax(300px,340px); }
 .ranked-order-panel,.ranked-player-dock,.ranked-live-top { border: 1px solid #393b3d; background: rgba(13,15,14,.94); box-shadow: 13px 16px 45px #0007; }
 .ranked-order-panel { grid-area: order; height: 100%; min-height: 0; display: grid; grid-template-rows: minmax(0,1fr) auto; overflow: hidden; }
@@ -176,7 +175,7 @@
 }
 
 @media (max-width: 1100px) {
-  .ranked-game-view { height: auto; min-height: 100dvh; padding: 76px 20px 70px; overflow: visible; }
+  .ranked-game-view { height: auto; min-height: 100dvh; padding: 76px 20px 70px; display: block; overflow: visible; }
   .ranked-game-header { grid-template-columns: 1fr auto; }
   .ranked-game-meta { grid-column: 1; grid-row: 2; align-items: flex-start; }
   .ranked-game-actions { grid-column: 2; grid-row: 1 / span 2; flex-direction: column; }

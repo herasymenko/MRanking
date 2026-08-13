@@ -15,6 +15,7 @@ export function RankedLibraryView({
   onUpload,
   onStart,
   onContinue,
+  onCancelRun,
   onOpenResult,
   onDeleteResult,
 }: {
@@ -25,6 +26,7 @@ export function RankedLibraryView({
   onUpload: () => void;
   onStart: (pack: Pack) => void;
   onContinue: (pack: Pack) => void;
+  onCancelRun: (pack: Pack) => void;
   onOpenResult: (result: RankedResult) => void;
   onDeleteResult: (result: RankedResult) => void;
 }) {
@@ -76,6 +78,11 @@ export function RankedLibraryView({
                   <button className={run ? "continue" : undefined} onClick={open}>
                     {t(run ? "Continue" : "Play")}
                   </button>
+                  {run && (
+                    <button className="danger" onClick={() => onCancelRun(pack)}>
+                      {t("Cancel run")}
+                    </button>
+                  )}
                 </div>
               </div>
             </article>

@@ -15,6 +15,7 @@ export type WheelLibraryViewProps = {
   onUpload: () => void;
   onStart: (pack: Pack) => void;
   onContinue: (pack: Pack, run: WheelRun) => void;
+  onCancelRun: (pack: Pack) => void;
   onOpenResult?: (result: WheelResult) => void;
   onDeleteResult?: (result: WheelResult) => void;
 };
@@ -31,6 +32,7 @@ export function WheelLibraryView({
   onUpload,
   onStart,
   onContinue,
+  onCancelRun,
   onOpenResult,
   onDeleteResult,
 }: WheelLibraryViewProps) {
@@ -110,11 +112,12 @@ export function WheelLibraryView({
                     {t(run ? "Continue" : "Play")}
                   </button>
                   {run && (
-                    <span className="wheel-run-mode">
-                      {t(modeLabel(run.state.mode))}
-                    </span>
+                    <button className="danger" onClick={() => onCancelRun(pack)}>
+                      {t("Cancel run")}
+                    </button>
                   )}
                 </div>
+                {run && <span className="wheel-run-mode">{t(modeLabel(run.state.mode))}</span>}
               </div>
             </article>
           );

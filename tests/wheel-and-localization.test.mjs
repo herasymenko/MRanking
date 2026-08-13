@@ -38,6 +38,8 @@ test("wheel mode supports weighted spins, elimination, sound and durable history
   assert.match(source, /wheelResultAsRun/);
   assert.match(source, /showSoClose/);
   assert.match(source, /wheel-entry-color/);
+  assert.match(source, /onCancelRun/);
+  assert.match(source, /className="danger"/);
   assert.match(source, /matching\.filter\(isActive\)/);
   assert.doesNotMatch(source, /t\("TOTAL CHANCE"\)/);
   assert.match(wheel, /SUSPENSE_CHANCE = 0\.05/);

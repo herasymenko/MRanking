@@ -7,6 +7,7 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     mode,
     app,
     game,
+    library,
     result,
     runsApi,
     resultsApi,
@@ -17,6 +18,7 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     read("../app/components/modes/ModeView.tsx"),
     read("../app/components/MRankingApp.tsx"),
     read("../app/components/ranked/RankedGameView.tsx"),
+    read("../app/components/modes/RankedLibraryView.tsx"),
     read("../app/components/ranked/RankedResultView.tsx"),
     read("../app/api/ranked-runs/route.ts"),
     read("../app/api/ranked-results/route.ts"),
@@ -37,6 +39,8 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(game, /ranked-player-drop-target/);
   assert.match(game, /activeMedia\.id/);
   assert.match(game, /Cancel run/);
+  assert.match(library, /onCancelRun/);
+  assert.match(library, /className="danger"/);
   assert.doesNotMatch(game, /Move up/);
   assert.doesNotMatch(game, /Move down/);
   assert.match(game, /Your top right now/);
@@ -60,6 +64,8 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(styles, /topbar\.topbar-game/);
   assert.match(styles, /ranked-live-toggle/);
   assert.match(styles, /app-shell:has\(\.ranked-game-view\) > footer \{ display: none/);
+  assert.match(styles, /ranked-game-header > div:first-child \{[^}]*gap: 12px/);
+  assert.match(styles, /ranked-workspace \{[^}]*flex: 1 1 auto/);
   assert.match(app, /compact=\{view !== "home"\}/);
 });
 
