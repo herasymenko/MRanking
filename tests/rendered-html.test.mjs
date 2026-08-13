@@ -116,6 +116,10 @@ test("client includes the private playlist-to-tournament flow", async () => {
   assert.match(source, /\/api\/youtube/);
   assert.match(source, /data\.kind === "profile"/);
   assert.match(source, /function ProfilePlaylistPicker/);
+  assert.match(source, /onChooseMany/);
+  assert.match(source, /Import selected/);
+  assert.match(source, /Add another playlist/);
+  assert.match(source, /mergePlaylistPreviews/);
   assert.match(source, /image\.dataset\.artShape/);
   assert.match(source, /className="profile-avatar-placeholder"/);
   assert.match(source, /event\.currentTarget\.hidden = true/);

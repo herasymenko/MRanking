@@ -68,6 +68,15 @@ export const RU_TRANSLATIONS: Record<string, string> = {
     Back: "Назад",
     "PUBLIC PROFILE": "ПУБЛИЧНЫЙ ПРОФИЛЬ",
     "public playlists": "публичных плейлистов",
+    "Select all": "Выбрать все",
+    Clear: "Очистить",
+    "playlists selected": "плейлистов выбрано",
+    "Import selected": "Импортировать выбранные",
+    "Add playlists": "Добавить плейлисты",
+    "SAME SERVICE": "ТОТ ЖЕ СЕРВИС",
+    "Only links from the same music service can be combined.":
+      "Объединять можно только ссылки одного музыкального сервиса.",
+    "Add playlist": "Добавить плейлист",
     "No profile picture": "Нет фотографии профиля",
     "No public playlists found": "Публичные плейлисты не найдены",
     "Only public playlists can be imported.":
@@ -86,6 +95,14 @@ export const RU_TRANSLATIONS: Record<string, string> = {
       "Ищем все доступные видео и убираем повторы.",
     "Cancel import": "Отменить импорт",
     "Edit imported pack": "Редактировать импортированный пак",
+    "Add another playlist from {service}.":
+      "Добавь ещё один плейлист из {service}.",
+    "Add another playlist": "Добавить ещё плейлист",
+    "Choose at least one playlist": "Выбери хотя бы один плейлист",
+    "Choose playlists instead of profile links":
+      "Выбирай плейлисты, а не ссылки на профили",
+    "Only playlists from the same music service can be combined":
+      "Объединять можно только плейлисты одного музыкального сервиса",
     "Pack name": "Название пака",
     Visibility: "Видимость",
     Private: "Приватный",

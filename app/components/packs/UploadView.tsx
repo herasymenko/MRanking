@@ -3,9 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type {
+  PlaylistPreview,
+  ProfilePlaylistPreview,
+  SourceType,
   YouTubeImportResult,
   YouTubeProfilePreview,
 } from "../../../lib/types";
+import { mergePlaylistPreviews } from "../../domain/packImport";
 import { useI18n } from "../../i18n/I18nContext";
 import { api } from "../../lib/api";
 import type { EditablePack } from "../../types";
@@ -14,6 +18,32 @@ import type { MusicSource } from "./constants";
 import { MusicSourceChooser } from "./MusicSourceChooser";
 import { PackEditor } from "./PackEditor";
 import { ProfilePlaylistPicker } from "./ProfilePlaylistPicker";
+
+function musicSourceFor(sourceType: SourceType): MusicSource {
+  if (sourceType === "spotify") {
+    return "spotify";
+  }
+  if (sourceType === "yandexMusic") {
+    return "yandex";
+  }
+  if (sourceType === "appleMusic") {
+    return "apple";
+  }
+  return "youtube";
+}
+
+function endpointFor(source: MusicSource | null) {
+  if (source === "spotify") {
+    return "/api/spotify";
+  }
+  if (source === "yandex") {
+    return "/api/yandex-music";
+  }
+  if (source === "apple") {
+    return "/api/apple-music";
+  }
+  return "/api/youtube";
+}
 
 export function UploadView({
   editable,
@@ -31,24 +61,18 @@ export function UploadView({
     editable ? "music" : null,
   );
   const [source, setSource] = useState<MusicSource | null>(
-    editable
-      ? editable.sourceType === "spotify"
-        ? "spotify"
-        : editable.sourceType === "yandexMusic"
-          ? "yandex"
-          : editable.sourceType === "appleMusic"
-            ? "apple"
-          : "youtube"
-      : null,
+    editable ? musicSourceFor(editable.sourceType) : null,
   );
   const [url, setUrl] = useState(editable?.sourceUrl ?? "");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [profile, setProfile] = useState<YouTubeProfilePreview | null>(null);
+  const [addingToPack, setAddingToPack] = useState(false);
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const controller = useRef<AbortController | null>(null);
   const mounted = useRef(true);
-  const isEditing = editable !== null;
+  const isEditing = editable !== null && !addingToPack;
   const hasProfile = profile !== null;
 
   useEffect(() => {
@@ -65,51 +89,53 @@ export function UploadView({
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [category, hasProfile, isEditing, source]);
+  }, [addingToPack, category, hasProfile, isEditing, source]);
 
-  async function loadMusicUrl(nextUrl: string, preserveProfile = false) {
+  async function loadMusicUrls(
+    nextUrls: string[],
+    options: { append?: boolean; suggestedName?: string } = {},
+  ) {
+    if (nextUrls.length === 0) {
+      setError("Choose at least one playlist");
+      return;
+    }
+
     controller.current?.abort();
     const requestController = new AbortController();
     controller.current = requestController;
     setLoading(true);
     setError("");
+    setImportProgress({ current: 0, total: nextUrls.length });
+
     try {
-      const endpoint =
-        source === "spotify"
-          ? "/api/spotify"
-          : source === "yandex"
-            ? "/api/yandex-music"
-            : source === "apple"
-              ? "/api/apple-music"
-            : "/api/youtube";
-      const data = await api<YouTubeImportResult>(endpoint, {
-        method: "POST",
-        body: JSON.stringify({ url: nextUrl }),
-        signal: requestController.signal,
-      });
-      if (!mounted.current || controller.current !== requestController) {
-        return;
+      const playlists: PlaylistPreview[] = [];
+      for (let index = 0; index < nextUrls.length; index += 1) {
+        setImportProgress({ current: index + 1, total: nextUrls.length });
+        const data = await api<YouTubeImportResult>(endpointFor(source), {
+          method: "POST",
+          body: JSON.stringify({ url: nextUrls[index] }),
+          signal: requestController.signal,
+        });
+        if (!mounted.current || controller.current !== requestController) {
+          return;
+        }
+        if (data.kind === "profile") {
+          if (nextUrls.length > 1) {
+            throw new Error("Choose playlists instead of profile links");
+          }
+          setProfile(data.profile);
+          return;
+        }
+        playlists.push(data.playlist);
       }
-      if (data.kind === "profile") {
-        setProfile(data.profile);
-        return;
-      }
-      if (!preserveProfile) {
-        setProfile(null);
-      }
-      onEditable({
-        name: data.playlist.title,
-        sourceType: data.playlist.sourceType,
-        sourceUrl: data.playlist.sourceUrl,
-        coverType: "thumbnail",
-        coverValue: data.playlist.cover,
-        visibility: "private",
-        skipped: data.playlist.skipped,
-        duplicates: data.playlist.duplicates,
-        issues: data.playlist.issues ?? [],
-        selectedVideoIds: data.playlist.items.map((item) => item.videoId),
-        items: data.playlist.items,
-      });
+
+      const base = options.append ? editable : null;
+      onEditable(
+        mergePlaylistPreviews(playlists, base, options.suggestedName ?? ""),
+      );
+      setProfile(null);
+      setAddingToPack(false);
+      setUrl("");
     } catch (nextError) {
       if (
         mounted.current &&
@@ -122,13 +148,32 @@ export function UploadView({
       if (mounted.current && controller.current === requestController) {
         controller.current = null;
         setLoading(false);
+        setImportProgress({ current: 0, total: 0 });
       }
     }
   }
 
   async function readPlaylist(event: FormEvent) {
     event.preventDefault();
-    await loadMusicUrl(url);
+    await loadMusicUrls([url], { append: addingToPack });
+  }
+
+  function importProfilePlaylists(playlists: ProfilePlaylistPreview[]) {
+    void loadMusicUrls(
+      playlists.map((playlist) => playlist.url),
+      {
+        append: addingToPack,
+        suggestedName: profile?.title ?? "",
+      },
+    );
+  }
+
+  function closeAddFlow() {
+    controller.current?.abort();
+    setAddingToPack(false);
+    setProfile(null);
+    setUrl("");
+    setError("");
   }
 
   const serviceTitle =
@@ -138,7 +183,7 @@ export function UploadView({
         ? "Yandex Music"
         : source === "apple"
           ? "Apple Music"
-        : "YouTube / YouTube Music";
+          : "YouTube / YouTube Music";
   const serviceIcon =
     source === "spotify"
       ? "●"
@@ -151,14 +196,15 @@ export function UploadView({
     source === "youtube"
       ? "Paste playlist or profile link"
       : "Paste playlist link";
-  const serviceCopy =
-    source === "spotify"
+  const serviceCopy = addingToPack
+    ? "Only links from the same music service can be combined."
+    : source === "spotify"
       ? "Use a public Spotify playlist."
       : source === "yandex"
         ? "Use a public Yandex Music playlist."
         : source === "apple"
           ? "Use a public Apple Music playlist."
-        : "Use a public playlist or profile from YouTube or YouTube Music.";
+          : "Use a public playlist or profile from YouTube or YouTube Music.";
   const servicePlaceholder =
     source === "spotify"
       ? "https://open.spotify.com/playlist/..."
@@ -166,9 +212,9 @@ export function UploadView({
         ? "https://music.yandex.ru/users/.../playlists/..."
         : source === "apple"
           ? "https://music.apple.com/us/playlist/.../pl...."
-        : "https://youtube.com/@profile or https://music.youtube.com/@profile";
+          : "https://youtube.com/@profile or https://music.youtube.com/@profile";
 
-  if (editable) {
+  if (editable && !addingToPack) {
     return (
       <PackEditor
         value={editable}
@@ -184,6 +230,14 @@ export function UploadView({
             setProfile(null);
           }
           window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        onAddPlaylist={() => {
+          setCategory("music");
+          setSource(musicSourceFor(editable.sourceType));
+          setAddingToPack(true);
+          setProfile(null);
+          setUrl("");
+          setError("");
         }}
         onSave={async () => {
           setSaving(true);
@@ -217,34 +271,43 @@ export function UploadView({
   }
 
   return (
-    <section className="page-wrap upload-view">
+    <section className={`page-wrap upload-view ${addingToPack ? "add-to-pack-view" : ""}`}>
       {!category && <FlowBack label="Back" onClick={onBack} />}
       <div className="page-heading">
         <div>
           <div className="eyebrow">
-            <span>●</span>01 / {t("INPUT")}
+            <span>●</span>
+            {addingToPack ? t("SAME SERVICE") : `01 / ${t("INPUT")}`}
           </div>
-          <h2>{t("Choose a source")}</h2>
+          <h2>{t(addingToPack ? "Add playlists" : "Choose a source")}</h2>
         </div>
       </div>
-      <MusicSourceChooser
-        category={category}
-        source={source}
-        onChooseCategory={() => setCategory("music")}
-        onChooseSource={setSource}
-        onBack={() => {
-          setCategory(null);
-          setSource(null);
-          setUrl("");
-          setProfile(null);
-          setError("");
-        }}
-      />
+
+      {!addingToPack && (
+        <MusicSourceChooser
+          category={category}
+          source={source}
+          onChooseCategory={() => setCategory("music")}
+          onChooseSource={setSource}
+          onBack={() => {
+            setCategory(null);
+            setSource(null);
+            setUrl("");
+            setProfile(null);
+            setError("");
+          }}
+        />
+      )}
+
       {source && !loading && !profile && (
         <form className="playlist-form" onSubmit={readPlaylist}>
           <FlowBack
             label="Back"
             onClick={() => {
+              if (addingToPack) {
+                closeAddFlow();
+                return;
+              }
               setSource(null);
               setUrl("");
               setProfile(null);
@@ -265,34 +328,42 @@ export function UploadView({
               required
             />
             <button className="button primary" type="submit">
-              {t("Read link")}
+              {t(addingToPack ? "Add playlist" : "Read link")}
               <span>↗</span>
             </button>
           </div>
           {error && <div className="form-error">{t(error)}</div>}
         </form>
       )}
+
       {profile && !loading && (
         <>
           <ProfilePlaylistPicker
+            key={profile.sourceUrl}
             profile={profile}
             onBack={() => {
               setProfile(null);
               setUrl("");
               setError("");
             }}
-            onRetry={() => loadMusicUrl(profile.sourceUrl)}
-            onChoose={(playlist) => loadMusicUrl(playlist.url, true)}
+            onRetry={() =>
+              void loadMusicUrls([profile.sourceUrl], {
+                append: addingToPack,
+              })
+            }
+            onChooseMany={importProfilePlaylists}
+            importing={loading}
           />
           {error && (
             <div className="form-error profile-import-error">{t(error)}</div>
           )}
         </>
       )}
+
       {loading && (
         <div className="import-loader">
           <div className="loader-orbit">
-            <span>▶</span>
+            <span>{serviceIcon}</span>
             <i />
             <i />
             <i />
@@ -300,7 +371,11 @@ export function UploadView({
           <div>
             <span className="modal-kicker">{t("IMPORTING")}</span>
             <h3>{t("Reading link")}</h3>
-            <p>{t("Looking for a playlist or public profile.")}</p>
+            <p>
+              {importProgress.total > 1
+                ? `${t("Playlist")} ${importProgress.current}/${importProgress.total}`
+                : t("Looking for a playlist or public profile.")}
+            </p>
             <div className="loading-bar">
               <i />
             </div>

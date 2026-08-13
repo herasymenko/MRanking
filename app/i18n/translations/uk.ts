@@ -68,6 +68,15 @@ export const UK_TRANSLATIONS: Record<string, string> = {
     Back: "Назад",
     "PUBLIC PROFILE": "ПУБЛІЧНИЙ ПРОФІЛЬ",
     "public playlists": "публічних плейлистів",
+    "Select all": "Обрати всі",
+    Clear: "Очистити",
+    "playlists selected": "плейлистів обрано",
+    "Import selected": "Імпортувати обрані",
+    "Add playlists": "Додати плейлисти",
+    "SAME SERVICE": "ТОЙ САМИЙ СЕРВІС",
+    "Only links from the same music service can be combined.":
+      "Об’єднувати можна лише посилання одного музичного сервісу.",
+    "Add playlist": "Додати плейлист",
     "No profile picture": "Немає фотографії профілю",
     "No public playlists found": "Публічних плейлистів не знайдено",
     "Only public playlists can be imported.":
@@ -86,6 +95,14 @@ export const UK_TRANSLATIONS: Record<string, string> = {
       "Шукаємо всі доступні відео та прибираємо дублікати.",
     "Cancel import": "Скасувати імпорт",
     "Edit imported pack": "Редагувати імпортований пак",
+    "Add another playlist from {service}.":
+      "Додай ще один плейлист із {service}.",
+    "Add another playlist": "Додати ще плейлист",
+    "Choose at least one playlist": "Обери хоча б один плейлист",
+    "Choose playlists instead of profile links":
+      "Обирай плейлисти, а не посилання на профілі",
+    "Only playlists from the same music service can be combined":
+      "Об’єднувати можна лише плейлисти одного музичного сервісу",
     "Pack name": "Назва паку",
     Visibility: "Видимість",
     Private: "Приватний",

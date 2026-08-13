@@ -1,6 +1,10 @@
 "use client";
 
-import { isYouTubeSource, pickRandomVideoIds } from "../../domain/pack";
+import {
+  isYouTubeSource,
+  pickRandomVideoIds,
+  sourceName,
+} from "../../domain/pack";
 import { useI18n } from "../../i18n/I18nContext";
 import type { EditablePack } from "../../types";
 import { FlowBack } from "../shared/FlowBack";
@@ -12,6 +16,7 @@ export function PackEditor({
   onChange,
   onBack,
   onSave,
+  onAddPlaylist,
   saving,
   error,
 }: {
@@ -19,6 +24,7 @@ export function PackEditor({
   onChange: (value: EditablePack) => void;
   onBack: () => void;
   onSave: () => void;
+  onAddPlaylist: () => void;
   saving: boolean;
   error: string;
 }) {
@@ -212,6 +218,27 @@ export function PackEditor({
           </div>
         </div>
         <aside className="selection-sidebar">
+          <section className="add-playlist-panel">
+            <span className="aside-label">{t("Music Service")}</span>
+            <div>
+              <strong>{t(sourceName(value.sourceType))}</strong>
+            </div>
+            <p>
+              {t("Add another playlist from {service}.").replace(
+                "{service}",
+                t(sourceName(value.sourceType)),
+              )}
+            </p>
+            <button
+              type="button"
+              className="button ghost add-playlist-button"
+              onClick={onAddPlaylist}
+              disabled={saving}
+            >
+              <span>+</span>
+              {t("Add another playlist")}
+            </button>
+          </section>
           <section className="selection-panel">
             <span className="aside-label">{t("Random selection")}</span>
             <h3>{selectedCount}</h3>

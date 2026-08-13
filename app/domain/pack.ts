@@ -64,6 +64,10 @@ export function sourceName(sourceType: SourceType) {
   return "YouTube";
 }
 
+export function sourceFamily(sourceType: SourceType) {
+  return isYouTubeSource(sourceType) ? "youtube" : sourceType;
+}
+
 export function mediaEmbedUrl(sourceType: SourceType, item: PackItem) {
   if (sourceType === "spotify") {
     return `https://open.spotify.com/embed/track/${encodeURIComponent(item.videoId)}?utm_source=generator`;
