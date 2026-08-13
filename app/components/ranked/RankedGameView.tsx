@@ -32,11 +32,11 @@ export function RankedGameView({
   const [topOpen, setTopOpen] = useState(false);
   const {
     closePlayer,
-    playFromTile,
     playInPlayer,
     player,
     playerRef,
     receiving,
+    toggleFromTile,
   } = useRankedPlayer();
   const {
     beginPointerDrag,
@@ -77,15 +77,9 @@ export function RankedGameView({
         </div>
         <div className="ranked-game-meta">
           <span>{pack.name}</span>
-          <div className="ranked-round-progress">
-            <strong>
-              {t("Round {current} / {total}", {
-                current: run.state.round,
-                total: run.state.targetRounds,
-              })}
-            </strong>
-            <b>{rankedProgressLabel(run.state)}</b>
-          </div>
+          <strong className="ranked-action-progress">
+            {rankedProgressLabel(run.state)}
+          </strong>
         </div>
         <div className="ranked-game-actions">
           <button
@@ -112,44 +106,47 @@ export function RankedGameView({
                 return null;
               }
               return (
-                <article
-                  key={id}
-                  ref={(element) => {
-                    if (element) {
-                      rowRefs.current.set(id, element);
-                    } else {
-                      rowRefs.current.delete(id);
-                    }
-                  }}
-                  className={`ranked-choice-row ${player?.itemId === id ? "active" : ""} ${dragged?.source === "group" && dragged.itemId === id ? "dragging" : ""}`}
-                  onPointerDown={(event) =>
-                    beginPointerDrag(event, id, "group")
-                  }
-                >
+                <div className="ranked-choice-slot" key={id}>
                   <span className="ranked-place">{index + 1}</span>
-                  <div className="ranked-choice-copy">
-                    <h3>{item.title}</h3>
-                    <p>{item.channel}{item.duration ? ` · ${item.duration}` : ""}</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="ranked-card-play"
-                    aria-label={t("Play track")}
-                    aria-pressed={player?.itemId === id}
-                    onClick={(event) =>
-                      playFromTile(
-                        id,
-                        event.currentTarget.closest(
-                          ".ranked-choice-row",
-                        ) as HTMLElement,
-                      )
+                  <article
+                    ref={(element) => {
+                      if (element) {
+                        rowRefs.current.set(id, element);
+                      } else {
+                        rowRefs.current.delete(id);
+                      }
+                    }}
+                    className={`ranked-choice-row ${player?.itemId === id ? "active" : ""} ${dragged?.source === "group" && dragged.itemId === id ? "dragging" : ""}`}
+                    onPointerDown={(event) =>
+                      beginPointerDrag(event, id, "group")
                     }
                   >
-                    <span aria-hidden="true">▶</span>
-                    <small>{t(player?.itemId === id ? "IN PLAYER" : "PLAY")}</small>
-                  </button>
-                  <span className="ranked-drag-handle" title={t("Drag to reorder")}>⠿</span>
-                </article>
+                    <div className="ranked-choice-copy">
+                      <h3>{item.title}</h3>
+                      <p>{item.channel}{item.duration ? ` · ${item.duration}` : ""}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="ranked-card-play"
+                      aria-label={t(player?.itemId === id ? "Pause track" : "Play track")}
+                      aria-pressed={player?.itemId === id}
+                      onClick={(event) =>
+                        toggleFromTile(
+                          id,
+                          event.currentTarget.closest(
+                            ".ranked-choice-row",
+                          ) as HTMLElement,
+                        )
+                      }
+                    >
+                      <span aria-hidden="true">
+                        {player?.itemId === id ? "Ⅱ" : "▶"}
+                      </span>
+                      <small>{t(player?.itemId === id ? "PAUSE" : "PLAY")}</small>
+                    </button>
+                    <span className="ranked-drag-handle" title={t("Drag to reorder")}>⠿</span>
+                  </article>
+                </div>
               );
             })}
           </div>

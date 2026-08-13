@@ -4,20 +4,22 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import type { RankedRun } from "../../../lib/types";
 import { moveRankedItem, setRankedGroupOrder } from "../../domain/ranked";
+import { animateRankedPreviewOpen } from "./useRankedPlayer";
 
 type DragSource = "group" | "leader";
 type PointerDrag = {
-  currentX: number;
-  currentY: number;
   itemId: string;
-  origin: DOMRect;
   overPlayer: boolean;
+  playerBounds: DOMRect | null;
   pointerId: number;
   preview: HTMLElement | null;
   source: DragSource;
+  sourceElement: HTMLElement;
   startX: number;
   startY: number;
   started: boolean;
+  targetIndex: number;
+  targetMidpoints: number[];
 };
 
 export function useRankedPointerOrder({
@@ -44,6 +46,7 @@ export function useRankedPointerOrder({
   const dragCleanupRef = useRef<(() => void) | null>(null);
   const rowRefs = useRef(new Map<string, HTMLElement>());
   const previousRowRects = useRef(new Map<string, DOMRect>());
+  const flipAnimations = useRef(new Map<string, Animation>());
 
   useEffect(() => {
     if (dragRef.current) {
@@ -70,12 +73,19 @@ export function useRankedPointerOrder({
       const current = element.getBoundingClientRect();
       const delta = previous.top - current.top;
       if (Math.abs(delta) > 1) {
-        element.animate(
+        flipAnimations.current.get(id)?.cancel();
+        const animation = element.animate(
           [
             { transform: `translateY(${delta}px)` },
             { transform: "translateY(0)" },
           ],
-          { duration: 190, easing: "cubic-bezier(.2,.8,.2,1)" },
+          { duration: 125, easing: "cubic-bezier(.2,.82,.2,1)" },
+        );
+        flipAnimations.current.set(id, animation);
+        animation.addEventListener(
+          "finish",
+          () => flipAnimations.current.delete(id),
+          { once: true },
         );
       }
     });
@@ -86,6 +96,7 @@ export function useRankedPointerOrder({
     () => () => {
       dragRef.current?.preview?.remove();
       dragCleanupRef.current?.();
+      flipAnimations.current.forEach((animation) => animation.cancel());
       document.body.classList.remove("ranked-pointer-dragging");
     },
     [],
@@ -107,17 +118,21 @@ export function useRankedPointerOrder({
     const sourceElement = event.currentTarget;
     const origin = sourceElement.getBoundingClientRect();
     const session: PointerDrag = {
-      currentX: 0,
-      currentY: 0,
       itemId,
-      origin,
       overPlayer: false,
+      playerBounds: playerRef.current?.getBoundingClientRect() ?? null,
       pointerId: event.pointerId,
       preview: null,
       source,
+      sourceElement,
       startX: event.clientX,
       startY: event.clientY,
       started: false,
+      targetIndex: draftOrderRef.current.indexOf(itemId),
+      targetMidpoints: draftOrderRef.current.map((id) => {
+        const bounds = rowRefs.current.get(id)?.getBoundingClientRect();
+        return bounds ? bounds.top + bounds.height / 2 : 0;
+      }),
     };
     dragRef.current = session;
     try {
@@ -136,6 +151,9 @@ export function useRankedPointerOrder({
       document.body.classList.remove("ranked-pointer-dragging");
       setDragged(null);
       setPlayerDragActive(false);
+      if (sourceElement.hasPointerCapture(session.pointerId)) {
+        sourceElement.releasePointerCapture(session.pointerId);
+      }
     };
 
     const createPreview = () => {
@@ -159,25 +177,25 @@ export function useRankedPointerOrder({
       if (pointerEvent.pointerId !== session.pointerId) {
         return;
       }
-      const x = pointerEvent.clientX - session.startX;
-      const y = pointerEvent.clientY - session.startY;
-      if (!session.started && Math.hypot(x, y) < 5) {
+      const coalesced = pointerEvent.getCoalescedEvents?.();
+      const current = coalesced?.[coalesced.length - 1] ?? pointerEvent;
+      const x = current.clientX - session.startX;
+      const y = current.clientY - session.startY;
+      if (!session.started && Math.hypot(x, y) < 2) {
         return;
       }
       pointerEvent.preventDefault();
       if (!session.started) {
         createPreview();
       }
-      session.currentX = x;
-      session.currentY = y;
       if (session.preview) {
         session.preview.style.transform =
           `translate3d(${x}px,${y}px,0) scale(1.018)`;
       }
-      const playerBounds = playerRef.current?.getBoundingClientRect();
+      const playerBounds = session.playerBounds;
       const overPlayer = Boolean(
         playerBounds &&
-          pointInside(pointerEvent.clientX, pointerEvent.clientY, playerBounds),
+          pointInside(current.clientX, current.clientY, playerBounds),
       );
       if (overPlayer !== session.overPlayer) {
         session.overPlayer = overPlayer;
@@ -186,7 +204,7 @@ export function useRankedPointerOrder({
       if (source !== "group" || overPlayer) {
         return;
       }
-      reorderAt(pointerEvent.clientY, itemId);
+      reorderAt(current.clientY, itemId);
     };
 
     const end = (pointerEvent: PointerEvent | null, cancelled: boolean) => {
@@ -205,7 +223,7 @@ export function useRankedPointerOrder({
         const preview = session.preview;
         session.preview = null;
         if (preview) {
-          animatePreviewToPlayer(preview, session, playerBounds);
+          animateRankedPreviewOpen(preview, playerBounds);
         }
         playInPlayer(itemId);
         if (source === "group") {
@@ -229,17 +247,17 @@ export function useRankedPointerOrder({
       if (fromIndex < 0) {
         return;
       }
-      let targetIndex = order.length - 1;
-      for (let index = 0; index < order.length; index += 1) {
-        const bounds = rowRefs.current
-          .get(order[index])
-          ?.getBoundingClientRect();
-        if (bounds && clientY < bounds.top + bounds.height / 2) {
-          targetIndex = index;
-          break;
-        }
+      const foundIndex = session.targetMidpoints.findIndex(
+        (midpoint) => midpoint > 0 && clientY < midpoint,
+      );
+      const targetIndex = foundIndex < 0 ? order.length - 1 : foundIndex;
+      if (targetIndex === session.targetIndex) {
+        return;
       }
+      session.targetIndex = targetIndex;
       if (targetIndex !== fromIndex) {
+        flipAnimations.current.forEach((animation) => animation.cancel());
+        flipAnimations.current.clear();
         previousRowRects.current = captureRowRects(rowRefs.current);
         const next = moveRankedItem(order, fromIndex, targetIndex);
         draftOrderRef.current = next;
@@ -278,29 +296,4 @@ function captureRowRects(rows: Map<string, HTMLElement>) {
   return new Map(
     [...rows].map(([id, element]) => [id, element.getBoundingClientRect()]),
   );
-}
-
-function animatePreviewToPlayer(
-  preview: HTMLElement,
-  drag: PointerDrag,
-  target: DOMRect,
-) {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    preview.remove();
-    return;
-  }
-  const x = target.left + target.width / 2 - (drag.origin.left + drag.origin.width / 2);
-  const y = target.top + target.height / 2 - (drag.origin.top + drag.origin.height / 2);
-  const animation = preview.animate(
-    [
-      {
-        transform: `translate3d(${drag.currentX}px,${drag.currentY}px,0) scale(1.018)`,
-        opacity: 1,
-      },
-      { transform: `translate3d(${x}px,${y}px,0) scale(.18)`, opacity: 0 },
-    ],
-    { duration: 220, easing: "cubic-bezier(.3,.8,.3,1)" },
-  );
-  animation.addEventListener("finish", () => preview.remove(), { once: true });
-  animation.addEventListener("cancel", () => preview.remove(), { once: true });
 }
