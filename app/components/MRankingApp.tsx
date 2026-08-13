@@ -218,9 +218,9 @@ export function MRankingApp() {
       <main className="app-shell">
         <div className="noise" aria-hidden="true" />
         <Header
-          key={view === "ranked" && ranked.activeRun?.state.status === "active" ? "game-header" : "site-header"}
+          key={view === "home" ? "home-header" : "flow-header"}
           view={view}
-          compact={view === "ranked" && ranked.activeRun?.state.status === "active"}
+          compact={view !== "home"}
           user={user}
           language={language}
           languageOpen={languageOpen}

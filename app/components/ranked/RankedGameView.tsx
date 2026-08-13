@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { DragEvent } from "react";
 import type { Pack, RankedRun } from "../../../lib/types";
 import {
   confirmRankedOrder,
@@ -60,6 +61,16 @@ export function RankedGameView({
     onChange(undoRankedOrder(run));
   }
 
+  function dropIntoPlayer(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    const itemId = draggedId ?? event.dataTransfer.getData("text/plain");
+    if (itemId && itemMap.has(itemId)) {
+      setPlaying(itemId);
+    }
+    setDraggedId(null);
+    setPlayerDragActive(false);
+  }
+
   return (
     <section className="ranked-game-view">
       <FlowBack label="Back" onClick={onBack} />
@@ -82,7 +93,7 @@ export function RankedGameView({
             onClick={undo}
           >↶ {t("Undo")}</button>
           <button type="button" className="ranked-cancel" onClick={onCancel}>
-            {t("Leave the ranking")}
+            {t("Cancel run")}
           </button>
         </div>
       </header>
@@ -136,21 +147,7 @@ export function RankedGameView({
                     <span aria-hidden="true">▶</span>
                     <small>{t(playing === id ? "IN PLAYER" : "PLAY")}</small>
                   </button>
-                  <div className="ranked-move-controls">
-                    <button
-                      type="button"
-                      disabled={index === 0}
-                      onClick={() => reorder(index, index - 1)}
-                      aria-label={t("Move up")}
-                    >↑</button>
-                    <span title={t("Drag to reorder")}>⠿</span>
-                    <button
-                      type="button"
-                      disabled={index === run.state.orderedGroup.length - 1}
-                      onClick={() => reorder(index, index + 1)}
-                      aria-label={t("Move down")}
-                    >↓</button>
-                  </div>
+                  <span className="ranked-drag-handle" title={t("Drag to reorder")}>⠿</span>
                 </article>
               );
             })}
@@ -167,22 +164,8 @@ export function RankedGameView({
             event.dataTransfer.dropEffect = "copy";
             setPlayerDragActive(true);
           }}
-          onDrop={(event) => {
-            event.preventDefault();
-            const itemId = event.dataTransfer.getData("text/plain");
-            if (itemMap.has(itemId)) {
-              setPlaying(itemId);
-            }
-            setPlayerDragActive(false);
-          }}
+          onDrop={dropIntoPlayer}
         >
-          <header className="ranked-player-head">
-            <div>
-              <h3>{activeMedia ? activeMedia.title : t("PLAYER")}</h3>
-              {activeMedia && <p>{activeMedia.channel}</p>}
-            </div>
-            <b aria-hidden="true">{activeMedia ? "ON" : "▶"}</b>
-          </header>
           {activeMedia ? (
             <RankedMedia
               key={activeMedia.id}
@@ -195,6 +178,24 @@ export function RankedGameView({
             <div className="ranked-player-empty">
               <span aria-hidden="true">▶</span>
               <strong>{t("Drag a track here to listen")}</strong>
+            </div>
+          )}
+          {draggedId && (
+            <div
+              className="ranked-player-drop-target"
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setPlayerDragActive(true);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "copy";
+                setPlayerDragActive(true);
+              }}
+              onDrop={dropIntoPlayer}
+            >
+              <span aria-hidden="true">↓</span>
+              <strong>{t("Drop to play")}</strong>
             </div>
           )}
         </section>
