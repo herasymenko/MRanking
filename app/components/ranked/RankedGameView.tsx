@@ -35,6 +35,8 @@ export function RankedGameView({
     () => new Map(pack.items.map((item) => [item.id, item])),
     [pack.items],
   );
+  const activeMedia = playing ? itemMap.get(playing) ?? null : null;
+  const playerPlaceholder = itemMap.get(run.state.orderedGroup[0]);
   const leaders = rankedLeaderboard(run.state.entries).slice(0, 100);
   const progress = Math.min(
     100,
@@ -50,6 +52,11 @@ export function RankedGameView({
     setPlaying(null);
     onChange(confirmRankedOrder(run));
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function undo() {
+    setPlaying(null);
+    onChange(undoRankedOrder(run));
   }
 
   return (
@@ -71,7 +78,7 @@ export function RankedGameView({
             type="button"
             className="ranked-undo"
             disabled={!run.state.undoStack.length}
-            onClick={() => onChange(undoRankedOrder(run))}
+            onClick={undo}
           >↶ {t("Undo")}</button>
           <button type="button" className="ranked-cancel" onClick={onCancel}>
             {t("Leave the ranking")}
@@ -96,13 +103,9 @@ export function RankedGameView({
               return (
                 <article
                   key={id}
-                  className={`ranked-choice-row ${playing === id ? "playing" : ""} ${draggedId === id ? "dragging" : ""}`}
-                  draggable={playing !== id}
+                  className={`ranked-choice-row ${playing === id ? "active" : ""} ${draggedId === id ? "dragging" : ""}`}
+                  draggable
                   onDragStart={(event) => {
-                    if (playing === id) {
-                      event.preventDefault();
-                      return;
-                    }
                     setDraggedId(id);
                     event.dataTransfer.effectAllowed = "move";
                     event.dataTransfer.setData("text/plain", id);
@@ -119,13 +122,18 @@ export function RankedGameView({
                     }
                   }}
                 >
+                  <button
+                    type="button"
+                    className="ranked-tile-preview"
+                    aria-label={t("Play track")}
+                    aria-pressed={playing === id}
+                    onClick={() => setPlaying(id)}
+                  >
+                    <RemoteImage src={item.thumbnailUrl} alt="" />
+                    <span className="ranked-tile-play" aria-hidden="true">▶</span>
+                    <small>{t(playing === id ? "IN PLAYER" : "PLAY")}</small>
+                  </button>
                   <span className="ranked-place">{index + 1}</span>
-                  <RankedMedia
-                    item={item}
-                    sourceType={pack.sourceType}
-                    playing={playing === id}
-                    onPlay={() => setPlaying(playing === id ? null : id)}
-                  />
                   <div className="ranked-choice-copy">
                     <h3>{item.title}</h3>
                     <p>{item.channel}{item.duration ? ` · ${item.duration}` : ""}</p>
@@ -153,6 +161,38 @@ export function RankedGameView({
             <span>{t("Lock this order")}</span><b>↗</b>
           </button>
         </div>
+
+        <section className={`ranked-player-dock ${activeMedia ? "has-track" : ""}`}>
+          <header className="ranked-player-head">
+            <div>
+              <span>{t("PLAYER")}</span>
+              <h3>{activeMedia ? activeMedia.title : t("Choose a track")}</h3>
+              <p>
+                {activeMedia
+                  ? activeMedia.channel
+                  : t("Press play on any tile. Your next choice replaces it here.")}
+              </p>
+            </div>
+            <b aria-hidden="true">{activeMedia ? "ON" : "▶"}</b>
+          </header>
+          {activeMedia ? (
+            <RankedMedia
+              key={activeMedia.id}
+              item={activeMedia}
+              sourceType={pack.sourceType}
+              playing
+              onPlay={() => setPlaying(null)}
+            />
+          ) : (
+            <div className="ranked-player-empty">
+              {playerPlaceholder ? (
+                <RemoteImage src={playerPlaceholder.thumbnailUrl} alt="" />
+              ) : null}
+              <span aria-hidden="true">▶</span>
+              <strong>{t("Choose a track")}</strong>
+            </div>
+          )}
+        </section>
 
         <aside className="ranked-live-top">
           <div className="ranked-live-head">

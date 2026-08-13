@@ -30,7 +30,9 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(app, /<RankedAppSection/);
   assert.match(app, /useRankedRun/);
   assert.match(game, /draggable/);
-  assert.match(game, /draggable=\{playing !== id\}/);
+  assert.equal(game.match(/<RankedMedia/g)?.length, 1);
+  assert.match(game, /className="ranked-tile-preview"/);
+  assert.match(game, /activeMedia\.id/);
   assert.match(game, /Your top right now/);
   assert.match(game, /confirmRankedOrder/);
   assert.match(result, /setManualRankedOrder/);
@@ -41,10 +43,12 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(migration, /CREATE TABLE `ranked_runs`/);
   assert.match(migration, /CREATE TABLE `ranked_results`/);
   assert.match(translations, /"Ranking complete"/);
+  assert.match(translations, /Choose a track/);
   assert.match(translations, /Рейтинг готов/);
   assert.match(styles, /@media \(max-width: 640px\)/);
   assert.match(styles, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(styles, /ranked-choice-row > \.ranked-media\.playing \{ height: 100%/);
+  assert.match(styles, /grid-template-areas: "order player board"/);
+  assert.match(styles, /ranked-player-dock > \.ranked-media/);
 });
 
 function read(path) {
