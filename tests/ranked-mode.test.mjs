@@ -43,8 +43,8 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(translations, /"Ranking complete"/);
   assert.match(translations, /Рейтинг готов/);
   assert.match(styles, /@media \(max-width: 640px\)/);
-  assert.match(styles, /ranked-media\.playing/);
-  assert.match(styles, /aspect-ratio: 16 \/ 9/);
+  assert.match(styles, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(styles, /ranked-choice-row > \.ranked-media\.playing \{ height: 100%/);
 });
 
 function read(path) {
