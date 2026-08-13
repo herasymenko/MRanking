@@ -31,12 +31,13 @@ export function RankedGameView({
   const { t } = useI18n();
   const [playing, setPlaying] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [playerDragActive, setPlayerDragActive] = useState(false);
+  const [topOpen, setTopOpen] = useState(false);
   const itemMap = useMemo(
     () => new Map(pack.items.map((item) => [item.id, item])),
     [pack.items],
   );
   const activeMedia = playing ? itemMap.get(playing) ?? null : null;
-  const playerPlaceholder = itemMap.get(run.state.orderedGroup[0]);
   const leaders = rankedLeaderboard(run.state.entries).slice(0, 100);
   const progress = Math.min(
     100,
@@ -87,13 +88,8 @@ export function RankedGameView({
       </header>
       <progress className="ranked-progress" max={100} value={progress} />
 
-      <div className="ranked-workspace">
+      <div className={`ranked-workspace ${topOpen ? "top-open" : ""}`}>
         <div className="ranked-order-panel">
-          <div className="ranked-instruction">
-            <span>{t("BEST")}</span>
-            <p>{t("Drag the contenders into your order. Best at the top. No ties.")}</p>
-            <span>{t("WORST")}</span>
-          </div>
           <div className="ranked-group-list">
             {run.state.orderedGroup.map((id, index) => {
               const item = itemMap.get(id);
@@ -110,7 +106,10 @@ export function RankedGameView({
                     event.dataTransfer.effectAllowed = "move";
                     event.dataTransfer.setData("text/plain", id);
                   }}
-                  onDragEnd={() => setDraggedId(null)}
+                  onDragEnd={() => {
+                    setDraggedId(null);
+                    setPlayerDragActive(false);
+                  }}
                   onDragOver={(event) => {
                     event.preventDefault();
                     if (!draggedId || draggedId === id) {
@@ -122,22 +121,21 @@ export function RankedGameView({
                     }
                   }}
                 >
-                  <button
-                    type="button"
-                    className="ranked-tile-preview"
-                    aria-label={t("Play track")}
-                    aria-pressed={playing === id}
-                    onClick={() => setPlaying(id)}
-                  >
-                    <RemoteImage src={item.thumbnailUrl} alt="" />
-                    <span className="ranked-tile-play" aria-hidden="true">▶</span>
-                    <small>{t(playing === id ? "IN PLAYER" : "PLAY")}</small>
-                  </button>
                   <span className="ranked-place">{index + 1}</span>
                   <div className="ranked-choice-copy">
                     <h3>{item.title}</h3>
                     <p>{item.channel}{item.duration ? ` · ${item.duration}` : ""}</p>
                   </div>
+                  <button
+                    type="button"
+                    className="ranked-card-play"
+                    aria-label={t("Play track")}
+                    aria-pressed={playing === id}
+                    onClick={() => setPlaying(id)}
+                  >
+                    <span aria-hidden="true">▶</span>
+                    <small>{t(playing === id ? "IN PLAYER" : "PLAY")}</small>
+                  </button>
                   <div className="ranked-move-controls">
                     <button
                       type="button"
@@ -162,16 +160,26 @@ export function RankedGameView({
           </button>
         </div>
 
-        <section className={`ranked-player-dock ${activeMedia ? "has-track" : ""}`}>
+        <section
+          className={`ranked-player-dock ${activeMedia ? "has-track" : ""} ${playerDragActive ? "drag-active" : ""}`}
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+            setPlayerDragActive(true);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            const itemId = event.dataTransfer.getData("text/plain");
+            if (itemMap.has(itemId)) {
+              setPlaying(itemId);
+            }
+            setPlayerDragActive(false);
+          }}
+        >
           <header className="ranked-player-head">
             <div>
-              <span>{t("PLAYER")}</span>
-              <h3>{activeMedia ? activeMedia.title : t("Choose a track")}</h3>
-              <p>
-                {activeMedia
-                  ? activeMedia.channel
-                  : t("Press play on any tile. Your next choice replaces it here.")}
-              </p>
+              <h3>{activeMedia ? activeMedia.title : t("PLAYER")}</h3>
+              {activeMedia && <p>{activeMedia.channel}</p>}
             </div>
             <b aria-hidden="true">{activeMedia ? "ON" : "▶"}</b>
           </header>
@@ -185,35 +193,43 @@ export function RankedGameView({
             />
           ) : (
             <div className="ranked-player-empty">
-              {playerPlaceholder ? (
-                <RemoteImage src={playerPlaceholder.thumbnailUrl} alt="" />
-              ) : null}
               <span aria-hidden="true">▶</span>
-              <strong>{t("Choose a track")}</strong>
+              <strong>{t("Drag a track here to listen")}</strong>
             </div>
           )}
         </section>
 
-        <aside className="ranked-live-top">
-          <div className="ranked-live-head">
-            <div><span>{t("LIVE BOARD")}</span><h3>{t("Your top right now")}</h3></div>
-            <b>{leaders.length}</b>
-          </div>
-          <div className="ranked-live-list">
-            {leaders.map((entry, index) => {
-              const item = itemMap.get(entry.itemId);
-              if (!item) {
-                return null;
-              }
-              return (
-                <div className="ranked-live-row" key={entry.itemId}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <RemoteImage src={item.thumbnailUrl} alt="" />
-                  <p><b>{item.title}</b><small>{item.channel}</small></p>
-                  <strong>{formatPoints(entry.points)}</strong>
-                </div>
-              );
-            })}
+        <aside className={`ranked-live-top ${topOpen ? "open" : "collapsed"}`}>
+          <button
+            type="button"
+            className="ranked-live-toggle"
+            aria-expanded={topOpen}
+            onClick={() => setTopOpen((open) => !open)}
+          >
+            <b aria-hidden="true">{topOpen ? "→" : "←"}</b>
+            <span>{t(topOpen ? "Hide current top" : "View current top")}</span>
+          </button>
+          <div className="ranked-live-content">
+            <div className="ranked-live-head">
+              <div><span>{t("LIVE BOARD")}</span><h3>{t("Your top right now")}</h3></div>
+              <b>{leaders.length}</b>
+            </div>
+            <div className="ranked-live-list">
+              {leaders.map((entry, index) => {
+                const item = itemMap.get(entry.itemId);
+                if (!item) {
+                  return null;
+                }
+                return (
+                  <div className="ranked-live-row" key={entry.itemId}>
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <RemoteImage src={item.thumbnailUrl} alt="" />
+                    <p><b>{item.title}</b><small>{item.channel}</small></p>
+                    <strong>{formatPoints(entry.points)}</strong>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </aside>
       </div>

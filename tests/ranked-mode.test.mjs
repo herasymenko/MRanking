@@ -31,7 +31,9 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(app, /useRankedRun/);
   assert.match(game, /draggable/);
   assert.equal(game.match(/<RankedMedia/g)?.length, 1);
-  assert.match(game, /className="ranked-tile-preview"/);
+  assert.match(game, /className="ranked-card-play"/);
+  assert.match(game, /onDrop=/);
+  assert.match(game, /dataTransfer\.getData\("text\/plain"\)/);
   assert.match(game, /activeMedia\.id/);
   assert.match(game, /Your top right now/);
   assert.match(game, /confirmRankedOrder/);
@@ -44,11 +46,15 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(migration, /CREATE TABLE `ranked_results`/);
   assert.match(translations, /"Ranking complete"/);
   assert.match(translations, /Choose a track/);
+  assert.match(translations, /Drag a track here to listen/);
   assert.match(translations, /Рейтинг готов/);
   assert.match(styles, /@media \(max-width: 640px\)/);
-  assert.match(styles, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(styles, /ranked-group-list \{[^}]*grid-template-columns: 1fr/);
   assert.match(styles, /grid-template-areas: "order player board"/);
   assert.match(styles, /ranked-player-dock > \.ranked-media/);
+  assert.match(styles, /topbar\.topbar-game/);
+  assert.match(styles, /ranked-live-toggle/);
+  assert.match(app, /compact=\{view === "ranked"/);
 });
 
 function read(path) {

@@ -24,15 +24,13 @@ export function MRankingApp() {
   const language = usePreferencesStore((state) => state.language);
   const setLanguage = usePreferencesStore((state) => state.setLanguage);
   const [view, setView] = useState<View>("home");
-  const [viewedResult, setViewedResult] = useState<SavedResult | null>(null);
-  const [viewedWheelResult, setViewedWheelResult] = useState<WheelResult | null>(null);
+  const [viewedResult, setViewedResult] = useState<SavedResult | null>(null); const [viewedWheelResult, setViewedWheelResult] = useState<WheelResult | null>(null);
   const [viewedRankedResult, setViewedRankedResult] = useState<RankedResult | null>(null);
   const [editable, setEditable] = useState<EditablePack | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
   const [toast, setToast] = useState("");
-
   const i18n = useMemo(
     () => ({
       language,
@@ -215,13 +213,14 @@ export function MRankingApp() {
       </div>
     );
   }
-
   return (
     <I18nContext.Provider value={i18n}>
       <main className="app-shell">
         <div className="noise" aria-hidden="true" />
         <Header
+          key={view === "ranked" && ranked.activeRun?.state.status === "active" ? "game-header" : "site-header"}
           view={view}
+          compact={view === "ranked" && ranked.activeRun?.state.status === "active"}
           user={user}
           language={language}
           languageOpen={languageOpen}

@@ -11,6 +11,7 @@ import { RemoteImage } from "../shared/RemoteImage";
 
 export function Header({
   view,
+  compact = false,
   user,
   language,
   languageOpen,
@@ -24,6 +25,7 @@ export function Header({
   onAvatar,
 }: {
   view: View;
+  compact?: boolean;
   user: User | null;
   language: Language;
   languageOpen: boolean;
@@ -37,8 +39,12 @@ export function Header({
   onAvatar: (url: string) => void;
 }) {
   const { t } = useI18n();
+  const [compactOpen, setCompactOpen] = useState(false);
+
   return (
-    <header className="topbar">
+    <header
+      className={`topbar ${compact ? "topbar-game" : ""} ${compact && compactOpen ? "open" : ""}`}
+    >
       <Logo onClick={onHome} />
       <nav className="main-nav" aria-label={t("Main navigation")}>
         <button
@@ -114,6 +120,17 @@ export function Header({
           )}
         </div>
       </div>
+      {compact && (
+        <button
+          type="button"
+          className="topbar-game-handle"
+          aria-expanded={compactOpen}
+          onClick={() => setCompactOpen((open) => !open)}
+        >
+          <span>{t(compactOpen ? "Hide menu" : "Open menu")}</span>
+          <b aria-hidden="true">⌄</b>
+        </button>
+      )}
     </header>
   );
 }
