@@ -1,20 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { DragEvent } from "react";
 import type { Pack, RankedRun } from "../../../lib/types";
 import {
   confirmRankedOrder,
-  moveRankedItem,
   rankedLeaderboard,
   rankedProgressLabel,
-  setRankedGroupOrder,
   undoRankedOrder,
 } from "../../domain/ranked";
 import { useI18n } from "../../i18n/I18nContext";
 import { FlowBack } from "../shared/FlowBack";
 import { RemoteImage } from "../shared/RemoteImage";
 import { RankedMedia } from "./RankedMedia";
+import { useRankedPlayer } from "./useRankedPlayer";
+import { useRankedPointerOrder } from "./useRankedPointerOrder";
 
 export function RankedGameView({
   pack,
@@ -30,45 +29,43 @@ export function RankedGameView({
   onCancel: () => void;
 }) {
   const { t } = useI18n();
-  const [playing, setPlaying] = useState<string | null>(null);
-  const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [playerDragActive, setPlayerDragActive] = useState(false);
   const [topOpen, setTopOpen] = useState(false);
+  const {
+    closePlayer,
+    playFromTile,
+    playInPlayer,
+    player,
+    playerRef,
+    receiving,
+  } = useRankedPlayer();
+  const {
+    beginPointerDrag,
+    draftOrder,
+    dragged,
+    playerDragActive,
+    rowRefs,
+  } = useRankedPointerOrder({ run, onChange, playerRef, playInPlayer });
   const itemMap = useMemo(
     () => new Map(pack.items.map((item) => [item.id, item])),
     [pack.items],
   );
-  const activeMedia = playing ? itemMap.get(playing) ?? null : null;
+  const activeMedia = player ? itemMap.get(player.itemId) ?? null : null;
   const leaders = rankedLeaderboard(run.state.entries).slice(0, 100);
   const progress = Math.min(
     100,
-    ((run.state.completedActions + 1) / Math.max(1, run.state.totalActions)) * 100,
+    ((run.state.completedActions + 1) / Math.max(1, run.state.totalActions)) *
+      100,
   );
 
-  function reorder(fromIndex: number, toIndex: number) {
-    const ordered = moveRankedItem(run.state.orderedGroup, fromIndex, toIndex);
-    onChange(setRankedGroupOrder(run, ordered));
-  }
-
   function confirm() {
-    setPlaying(null);
+    closePlayer();
     onChange(confirmRankedOrder(run));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function undo() {
-    setPlaying(null);
+    closePlayer();
     onChange(undoRankedOrder(run));
-  }
-
-  function dropIntoPlayer(event: DragEvent<HTMLElement>) {
-    event.preventDefault();
-    const itemId = draggedId ?? event.dataTransfer.getData("text/plain");
-    if (itemId && itemMap.has(itemId)) {
-      setPlaying(itemId);
-    }
-    setDraggedId(null);
-    setPlayerDragActive(false);
   }
 
   return (
@@ -76,14 +73,19 @@ export function RankedGameView({
       <FlowBack label="Back" onClick={onBack} />
       <header className="ranked-game-header">
         <div>
-          <span className="ranked-phase">
-            {t(run.state.phase === "qualification" ? "Qualification" : "Top 100 ranking")}
-          </span>
           <h2>{t("Put them in their place")}</h2>
         </div>
         <div className="ranked-game-meta">
           <span>{pack.name}</span>
-          <strong>{rankedProgressLabel(run.state)}</strong>
+          <div className="ranked-round-progress">
+            <strong>
+              {t("Round {current} / {total}", {
+                current: run.state.round,
+                total: run.state.targetRounds,
+              })}
+            </strong>
+            <b>{rankedProgressLabel(run.state)}</b>
+          </div>
         </div>
         <div className="ranked-game-actions">
           <button
@@ -91,7 +93,9 @@ export function RankedGameView({
             className="ranked-undo"
             disabled={!run.state.undoStack.length}
             onClick={undo}
-          >↶ {t("Undo")}</button>
+          >
+            ↶ {t("Undo")}
+          </button>
           <button type="button" className="ranked-cancel" onClick={onCancel}>
             {t("Cancel run")}
           </button>
@@ -102,7 +106,7 @@ export function RankedGameView({
       <div className={`ranked-workspace ${topOpen ? "top-open" : ""}`}>
         <div className="ranked-order-panel">
           <div className="ranked-group-list">
-            {run.state.orderedGroup.map((id, index) => {
+            {draftOrder.map((id, index) => {
               const item = itemMap.get(id);
               if (!item) {
                 return null;
@@ -110,27 +114,17 @@ export function RankedGameView({
               return (
                 <article
                   key={id}
-                  className={`ranked-choice-row ${playing === id ? "active" : ""} ${draggedId === id ? "dragging" : ""}`}
-                  draggable
-                  onDragStart={(event) => {
-                    setDraggedId(id);
-                    event.dataTransfer.effectAllowed = "move";
-                    event.dataTransfer.setData("text/plain", id);
-                  }}
-                  onDragEnd={() => {
-                    setDraggedId(null);
-                    setPlayerDragActive(false);
-                  }}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    if (!draggedId || draggedId === id) {
-                      return;
-                    }
-                    const fromIndex = run.state.orderedGroup.indexOf(draggedId);
-                    if (fromIndex >= 0) {
-                      reorder(fromIndex, index);
+                  ref={(element) => {
+                    if (element) {
+                      rowRefs.current.set(id, element);
+                    } else {
+                      rowRefs.current.delete(id);
                     }
                   }}
+                  className={`ranked-choice-row ${player?.itemId === id ? "active" : ""} ${dragged?.source === "group" && dragged.itemId === id ? "dragging" : ""}`}
+                  onPointerDown={(event) =>
+                    beginPointerDrag(event, id, "group")
+                  }
                 >
                   <span className="ranked-place">{index + 1}</span>
                   <div className="ranked-choice-copy">
@@ -141,11 +135,18 @@ export function RankedGameView({
                     type="button"
                     className="ranked-card-play"
                     aria-label={t("Play track")}
-                    aria-pressed={playing === id}
-                    onClick={() => setPlaying(id)}
+                    aria-pressed={player?.itemId === id}
+                    onClick={(event) =>
+                      playFromTile(
+                        id,
+                        event.currentTarget.closest(
+                          ".ranked-choice-row",
+                        ) as HTMLElement,
+                      )
+                    }
                   >
                     <span aria-hidden="true">▶</span>
-                    <small>{t(playing === id ? "IN PLAYER" : "PLAY")}</small>
+                    <small>{t(player?.itemId === id ? "IN PLAYER" : "PLAY")}</small>
                   </button>
                   <span className="ranked-drag-handle" title={t("Drag to reorder")}>⠿</span>
                 </article>
@@ -158,21 +159,16 @@ export function RankedGameView({
         </div>
 
         <section
-          className={`ranked-player-dock ${activeMedia ? "has-track" : ""} ${playerDragActive ? "drag-active" : ""}`}
-          onDragOver={(event) => {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "copy";
-            setPlayerDragActive(true);
-          }}
-          onDrop={dropIntoPlayer}
+          ref={playerRef}
+          className={`ranked-player-dock ${activeMedia ? "has-track" : ""} ${playerDragActive ? "drag-active" : ""} ${receiving ? "receiving" : ""}`}
         >
           {activeMedia ? (
             <RankedMedia
-              key={activeMedia.id}
+              key={`${activeMedia.id}-${player?.loadKey}`}
               item={activeMedia}
               sourceType={pack.sourceType}
               playing
-              onPlay={() => setPlaying(null)}
+              onClose={closePlayer}
             />
           ) : (
             <div className="ranked-player-empty">
@@ -180,20 +176,8 @@ export function RankedGameView({
               <strong>{t("Drag a track here to listen")}</strong>
             </div>
           )}
-          {draggedId && (
-            <div
-              className="ranked-player-drop-target"
-              onDragEnter={(event) => {
-                event.preventDefault();
-                setPlayerDragActive(true);
-              }}
-              onDragOver={(event) => {
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "copy";
-                setPlayerDragActive(true);
-              }}
-              onDrop={dropIntoPlayer}
-            >
+          {playerDragActive && (
+            <div className="ranked-player-drop-target">
               <span aria-hidden="true">↓</span>
               <strong>{t("Drop to play")}</strong>
             </div>
@@ -222,9 +206,15 @@ export function RankedGameView({
                   return null;
                 }
                 return (
-                  <div className="ranked-live-row" key={entry.itemId}>
+                  <div
+                    className={`ranked-live-row ${player?.itemId === entry.itemId ? "active" : ""} ${dragged?.source === "leader" && dragged.itemId === entry.itemId ? "dragging" : ""}`}
+                    key={entry.itemId}
+                    onPointerDown={(event) =>
+                      beginPointerDrag(event, entry.itemId, "leader")
+                    }
+                  >
                     <span>{String(index + 1).padStart(2, "0")}</span>
-                    <RemoteImage src={item.thumbnailUrl} alt="" />
+                    <RemoteImage src={item.thumbnailUrl} alt="" draggable={false} />
                     <p><b>{item.title}</b><small>{item.channel}</small></p>
                     <strong>{formatPoints(entry.points)}</strong>
                   </div>

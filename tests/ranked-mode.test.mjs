@@ -7,6 +7,8 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     mode,
     app,
     game,
+    pointerOrder,
+    playerHook,
     library,
     result,
     runsApi,
@@ -18,6 +20,8 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     read("../app/components/modes/ModeView.tsx"),
     read("../app/components/MRankingApp.tsx"),
     read("../app/components/ranked/RankedGameView.tsx"),
+    read("../app/components/ranked/useRankedPointerOrder.ts"),
+    read("../app/components/ranked/useRankedPlayer.ts"),
     read("../app/components/modes/RankedLibraryView.tsx"),
     read("../app/components/ranked/RankedResultView.tsx"),
     read("../app/api/ranked-runs/route.ts"),
@@ -31,13 +35,22 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(mode, /onOpenRanked/);
   assert.match(app, /<RankedAppSection/);
   assert.match(app, /useRankedRun/);
-  assert.match(game, /draggable/);
   assert.equal(game.match(/<RankedMedia/g)?.length, 1);
   assert.match(game, /className="ranked-card-play"/);
-  assert.match(game, /onDrop=/);
-  assert.match(game, /dataTransfer\.getData\("text\/plain"\)/);
+  assert.match(game, /beginPointerDrag/);
+  assert.match(game, /onPointerDown/);
+  assert.match(game, /beginPointerDrag\(event, entry\.itemId, "leader"\)/);
+  assert.match(pointerOrder, /type DragSource = "group" \| "leader"/);
+  assert.match(pointerOrder, /ranked-drag-preview/);
+  assert.match(pointerOrder, /animatePreviewToPlayer/);
+  assert.match(pointerOrder, /playInPlayer\(itemId\)/);
+  assert.match(playerHook, /function playInPlayer\(itemId: string\)/);
+  assert.match(playerHook, /loadKeyRef\.current \+= 1/);
+  assert.match(playerHook, /ranked-card-flight/);
+  assert.match(game, /key=\{`\$\{activeMedia\.id\}-\$\{player\?\.loadKey\}`\}/);
   assert.match(game, /ranked-player-drop-target/);
   assert.match(game, /activeMedia\.id/);
+  assert.doesNotMatch(game, /ranked-phase|"Qualification"|"Top 100 ranking"/);
   assert.match(game, /Cancel run/);
   assert.match(library, /onCancelRun/);
   assert.match(library, /className="danger"/);
@@ -64,7 +77,10 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(styles, /topbar\.topbar-game/);
   assert.match(styles, /ranked-live-toggle/);
   assert.match(styles, /app-shell:has\(\.ranked-game-view\) > footer \{ display: none/);
-  assert.match(styles, /ranked-game-header > div:first-child \{[^}]*gap: 12px/);
+  assert.match(styles, /ranked-game-view > :not\(\.flow-back\)/);
+  assert.match(styles, /ranked-game-view > \.flow-back \{[^}]*position: absolute/);
+  assert.match(styles, /ranked-card-flight/);
+  assert.match(styles, /ranked-player-receive/);
   assert.match(styles, /ranked-workspace \{[^}]*flex: 1 1 auto/);
   assert.match(app, /compact=\{view !== "home"\}/);
 });

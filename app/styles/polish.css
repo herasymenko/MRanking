@@ -451,7 +451,6 @@ body {
 /* Ranked */
 .ranked-game-view { background: radial-gradient(circle at 75% 18%,rgba(166,140,255,.13),transparent 34rem),#090b09; }
 .ranked-game-header h2 { font-size: clamp(52px,5vw,82px); letter-spacing: -.025em; }
-.ranked-phase { border-radius: 999px; padding: 7px 11px; border: 1px solid rgba(166,140,255,.4); background: rgba(166,140,255,.08); }
 .ranked-order-panel,.ranked-live-top { border-radius: var(--radius-lg); border-color: #41483e; box-shadow: var(--shadow-card); }
 .ranked-choice-row { border-radius: 13px; border-color: #363d34; }
 .ranked-choice-row:hover { border-color: var(--violet); box-shadow: 0 12px 30px rgba(0,0,0,.25); }

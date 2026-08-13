@@ -9,13 +9,13 @@ export function RankedMedia({
   item,
   sourceType,
   playing,
-  onPlay,
+  onClose,
   compact = false,
 }: {
   item: PackItem;
   sourceType: SourceType;
   playing: boolean;
-  onPlay: () => void;
+  onClose: () => void;
   compact?: boolean;
 }) {
   const { t } = useI18n();
@@ -36,7 +36,7 @@ export function RankedMedia({
       )}
       <button
         type="button"
-        onClick={onPlay}
+        onClick={onClose}
         aria-label={t(playing ? "Close player" : "Play track")}
       >
         <span aria-hidden="true">{playing ? "×" : "▶"}</span>

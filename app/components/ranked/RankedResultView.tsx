@@ -126,7 +126,7 @@ export function RankedResultView({
                 item={item}
                 sourceType={pack.sourceType}
                 playing={playing === id}
-                onPlay={() => setPlaying(playing === id ? null : id)}
+                onClose={() => setPlaying(playing === id ? null : id)}
               />
               <div className="ranked-final-copy"><b>{item.title}</b><small>{item.channel}</small></div>
               <strong>{formatPoints(points.get(id) ?? 0)} <small>{t("PTS")}</small></strong>
