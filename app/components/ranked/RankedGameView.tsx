@@ -128,7 +128,7 @@ export function RankedGameView({
                     <button
                       type="button"
                       className="ranked-card-play"
-                      aria-label={t(player?.itemId === id ? "Pause track" : "Play track")}
+                      aria-label={t(player?.itemId === id ? "Stop track" : "Play track")}
                       aria-pressed={player?.itemId === id}
                       onClick={(event) =>
                         toggleFromTile(
@@ -140,9 +140,9 @@ export function RankedGameView({
                       }
                     >
                       <span aria-hidden="true">
-                        {player?.itemId === id ? "Ⅱ" : "▶"}
+                        {player?.itemId === id ? "■" : "▶"}
                       </span>
-                      <small>{t(player?.itemId === id ? "PAUSE" : "PLAY")}</small>
+                      <small>{t(player?.itemId === id ? "STOP" : "PLAY")}</small>
                     </button>
                     <span className="ranked-drag-handle" title={t("Drag to reorder")}>⠿</span>
                   </article>
@@ -151,7 +151,7 @@ export function RankedGameView({
             })}
           </div>
           <button type="button" className="ranked-confirm" onClick={confirm}>
-            <span>{t("Lock this order")}</span><b>↗</b>
+            <span>{t("NEXT")}</span>
           </button>
         </div>
 
@@ -166,6 +166,7 @@ export function RankedGameView({
               sourceType={pack.sourceType}
               playing
               onClose={closePlayer}
+              showControl={false}
             />
           ) : (
             <div className="ranked-player-empty">

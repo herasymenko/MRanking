@@ -30,7 +30,7 @@ export function useRankedPlayer() {
     receiveTimerRef.current = window.setTimeout(() => {
       setReceiving(false);
       receiveTimerRef.current = null;
-    }, 320);
+    }, 520);
   }
 
   function toggleFromTile(itemId: string, source: HTMLElement) {
@@ -122,7 +122,7 @@ function expandElementIntoPlayer(
         width: `${target.width}px`,
       },
     ],
-    { duration: 360, easing: "cubic-bezier(.2,.76,.22,1)" },
+    { duration: 500, easing: "cubic-bezier(.2,.76,.22,1)" },
   );
   animation.addEventListener("finish", () => element.remove(), { once: true });
   animation.addEventListener("cancel", () => element.remove(), { once: true });

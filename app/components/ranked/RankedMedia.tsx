@@ -11,12 +11,14 @@ export function RankedMedia({
   playing,
   onClose,
   compact = false,
+  showControl = true,
 }: {
   item: PackItem;
   sourceType: SourceType;
   playing: boolean;
   onClose: () => void;
   compact?: boolean;
+  showControl?: boolean;
 }) {
   const { t } = useI18n();
   return (
@@ -34,13 +36,15 @@ export function RankedMedia({
       ) : (
         <RemoteImage src={item.thumbnailUrl} alt="" />
       )}
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label={t(playing ? "Close player" : "Play track")}
-      >
-        <span aria-hidden="true">{playing ? "×" : "▶"}</span>
-      </button>
+      {showControl && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t(playing ? "Close player" : "Play track")}
+        >
+          <span aria-hidden="true">{playing ? "×" : "▶"}</span>
+        </button>
+      )}
     </div>
   );
 }

@@ -56,9 +56,13 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.doesNotMatch(game, /ranked-phase|"Qualification"|"Top 100 ranking"/);
   assert.doesNotMatch(game, /targetRounds|Round \{current\}/);
   assert.match(game, /className="ranked-choice-slot"/);
-  assert.match(game, /"PAUSE"/);
+  assert.match(game, /"STOP"/);
   assert.doesNotMatch(game, /"IN PLAYER"/);
-  assert.match(game, /player\?\.itemId === id \? "Pause track" : "Play track"/);
+  assert.doesNotMatch(game, /"PAUSE"|"Pause track"/);
+  assert.match(game, /player\?\.itemId === id \? "Stop track" : "Play track"/);
+  assert.match(game, /showControl=\{false\}/);
+  assert.match(game, /t\("NEXT"\)/);
+  assert.doesNotMatch(game, /Lock this order/);
   assert.match(game, /Cancel run/);
   assert.match(library, /onCancelRun/);
   assert.match(library, /className="danger"/);
@@ -77,8 +81,9 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(translations, /Choose a track/);
   assert.match(translations, /Drag a track here to listen/);
   assert.match(translations, /Drop to play/);
-  assert.match(translations, /PAUSE/);
-  assert.match(translations, /Pause track/);
+  assert.match(translations, /STOP/);
+  assert.match(translations, /Stop track/);
+  assert.match(translations, /NEXT/);
   assert.match(translations, /Рейтинг готов/);
   assert.match(styles, /@media \(max-width: 640px\)/);
   assert.match(styles, /ranked-group-list \{[^}]*grid-template-columns: 1fr/);

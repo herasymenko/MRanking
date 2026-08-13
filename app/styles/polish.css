@@ -454,7 +454,7 @@ body {
 .ranked-order-panel,.ranked-live-top { border-radius: var(--radius-lg); border-color: #41483e; box-shadow: var(--shadow-card); }
 .ranked-choice-row { border-radius: 13px; border-color: #363d34; }
 .ranked-choice-row:hover { border-color: var(--violet); box-shadow: 0 12px 30px rgba(0,0,0,.25); }
-.ranked-confirm { min-height: 70px; border-radius: 11px; font-size: 16px; }
+.ranked-confirm { border-radius: 11px; }
 .ranked-live-row { border-radius: 9px; }
 .ranked-result-hero { border-radius: var(--radius-xl); background: radial-gradient(circle at 78% 20%,rgba(166,140,255,.16),transparent 44%),#111410; }
 .ranked-result-hero h2 { font-size: clamp(66px,6vw,96px); }
