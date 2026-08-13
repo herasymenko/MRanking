@@ -68,7 +68,11 @@ export function sourceFamily(sourceType: SourceType) {
   return isYouTubeSource(sourceType) ? "youtube" : sourceType;
 }
 
-export function mediaEmbedUrl(sourceType: SourceType, item: PackItem) {
+export function mediaEmbedUrl(
+  sourceType: SourceType,
+  item: PackItem,
+  startSeconds = 0,
+) {
   if (sourceType === "spotify") {
     return `https://open.spotify.com/embed/track/${encodeURIComponent(item.videoId)}?utm_source=generator`;
   }
@@ -88,7 +92,8 @@ export function mediaEmbedUrl(sourceType: SourceType, item: PackItem) {
       return "https://embed.music.apple.com/";
     }
   }
-  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(item.videoId)}?autoplay=1&rel=0`;
+  const start = Math.max(0, Math.floor(startSeconds));
+  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(item.videoId)}?autoplay=1&rel=0${start ? `&start=${start}` : ""}`;
 }
 
 export function exportPack(pack: Pack): void {

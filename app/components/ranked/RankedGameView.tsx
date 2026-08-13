@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Pack, RankedRun } from "../../../lib/types";
 import {
   confirmRankedOrder,
@@ -33,6 +33,10 @@ export function RankedGameView({
 }) {
   const { t } = useI18n();
   const [topOpen, setTopOpen] = useState(false);
+  const [matchSummary, setMatchSummary] = useState<
+    Array<{ delta: number; itemId: string; place: number; title: string }> | null
+  >(null);
+  const summaryTimerRef = useRef<number | null>(null);
   const { playSound, setVolume, unlockSound, volume } = useRankedSounds();
   const {
     closePlayer,
@@ -50,6 +54,7 @@ export function RankedGameView({
     closePlayer,
     playInPlayer,
     onStart: () => playSound("play"),
+    sourceType: pack.sourceType,
   });
   function playManually(itemId: string) {
     stopPreview({ close: false });
@@ -87,13 +92,58 @@ export function RankedGameView({
       100,
   );
 
+  useEffect(
+    () => () => {
+      if (summaryTimerRef.current !== null) {
+        window.clearTimeout(summaryTimerRef.current);
+      }
+    },
+    [],
+  );
+
   function confirm() {
     stopPreview();
-    onChange(confirmRankedOrder(run));
+    playSound("next");
+    const before = new Map(
+      rankedLeaderboard(run.state.entries).map((entry, index) => [
+        entry.itemId,
+        index,
+      ]),
+    );
+    const nextRun = confirmRankedOrder(run);
+    const after = new Map(
+      rankedLeaderboard(nextRun.state.entries).map((entry, index) => [
+        entry.itemId,
+        index,
+      ]),
+    );
+    const summary = draftOrder.flatMap((itemId) => {
+      const item = itemMap.get(itemId);
+      const previousPlace = before.get(itemId);
+      const nextPlace = after.get(itemId);
+      return item && previousPlace !== undefined && nextPlace !== undefined
+        ? [{
+            delta: previousPlace - nextPlace,
+            itemId,
+            place: nextPlace + 1,
+            title: item.title,
+          }]
+        : [];
+    });
+    setMatchSummary(summary);
+    if (summaryTimerRef.current !== null) {
+      window.clearTimeout(summaryTimerRef.current);
+    }
+    summaryTimerRef.current = window.setTimeout(() => {
+      setMatchSummary(null);
+      summaryTimerRef.current = null;
+    }, 1_180);
+    onChange(nextRun);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function undo() {
+    setMatchSummary(null);
     stopPreview();
     onChange(undoRankedOrder(run));
   }
@@ -136,7 +186,7 @@ export function RankedGameView({
       <progress className="ranked-progress" max={100} value={progress} />
 
       <div className={`ranked-workspace ${topOpen ? "top-open" : ""} ${activeGroupItem ? "has-active-player" : ""}`}>
-        <div className="ranked-order-panel">
+        <div className={`ranked-order-panel ${matchSummary ? "match-settling" : ""}`}>
           <div className="ranked-group-list">
             {draftOrder.map((id, index) => {
               const item = itemMap.get(id);
@@ -204,7 +254,14 @@ export function RankedGameView({
                   playSound("stop");
                   stopPreview();
                 } else {
-                  startPreview(draftOrder);
+                  startPreview(
+                    draftOrder.flatMap((itemId) => {
+                      const item = itemMap.get(itemId);
+                      return item
+                        ? [{ itemId, duration: item.duration }]
+                        : [];
+                    }),
+                  );
                 }
               }}
             >
@@ -222,6 +279,31 @@ export function RankedGameView({
               <span>{t("NEXT")}</span>
             </button>
           </div>
+          {matchSummary && (
+            <div className="ranked-match-ghosts" aria-hidden="true">
+              {matchSummary.map((item) => (
+                <div className="ranked-match-ghost" key={item.itemId}>
+                  <b>{item.place}</b>
+                  <span>{item.title}</span>
+                  <strong
+                    className={
+                      item.delta > 0
+                        ? "up"
+                        : item.delta < 0
+                          ? "down"
+                          : "same"
+                    }
+                  >
+                    {item.delta > 0
+                      ? `↑${item.delta}`
+                      : item.delta < 0
+                        ? `↓${Math.abs(item.delta)}`
+                        : "—"}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <section
@@ -233,6 +315,7 @@ export function RankedGameView({
               key={`${activeMedia.id}-${player?.loadKey}`}
               item={activeMedia}
               sourceType={pack.sourceType}
+              startSeconds={player?.startSeconds}
               playing
               onClose={closePlayer}
               showControl={false}
@@ -256,7 +339,10 @@ export function RankedGameView({
             type="button"
             className="ranked-live-toggle"
             aria-expanded={topOpen}
-            onClick={() => setTopOpen((open) => !open)}
+            onClick={() => {
+              playSound("top");
+              setTopOpen((open) => !open);
+            }}
           >
             <b aria-hidden="true">{topOpen ? "→" : "←"}</b>
             <span>{t(topOpen ? "Hide current top" : "View current top")}</span>

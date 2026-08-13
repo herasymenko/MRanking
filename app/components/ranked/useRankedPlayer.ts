@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlayRankedSound } from "./useRankedSounds";
 
-export type RankedPlayerSelection = { itemId: string; loadKey: number };
+export type RankedPlayerSelection = {
+  itemId: string;
+  loadKey: number;
+  startSeconds: number;
+};
 
 export function useRankedPlayer(playSound: PlayRankedSound) {
   const [player, setPlayer] = useState<RankedPlayerSelection | null>(null);
@@ -21,9 +25,9 @@ export function useRankedPlayer(playSound: PlayRankedSound) {
     [],
   );
 
-  function playInPlayer(itemId: string) {
+  function playInPlayer(itemId: string, startSeconds = 0) {
     loadKeyRef.current += 1;
-    setPlayer({ itemId, loadKey: loadKeyRef.current });
+    setPlayer({ itemId, loadKey: loadKeyRef.current, startSeconds });
     setReceiving(true);
     if (receiveTimerRef.current !== null) {
       window.clearTimeout(receiveTimerRef.current);

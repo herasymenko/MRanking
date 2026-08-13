@@ -1,17 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { SourceType } from "../../../lib/types";
+import { isYouTubeSource } from "../../domain/pack";
 
-const PREVIEW_SLICE_MS = 12_000;
+const PREVIEW_SLICE_MS = 7_000;
+type PreviewQueueItem = { itemId: string; duration: string | null };
 
 export function useRankedPreviewQueue({
   playInPlayer,
   closePlayer,
   onStart,
+  sourceType,
 }: {
-  playInPlayer: (itemId: string) => void;
+  playInPlayer: (itemId: string, startSeconds?: number) => void;
   closePlayer: () => void;
   onStart: () => void;
+  sourceType: SourceType;
 }) {
   const [preview, setPreview] = useState<{ index: number; total: number } | null>(null);
   const tokenRef = useRef(0);
@@ -33,11 +38,11 @@ export function useRankedPreviewQueue({
     }
   }
 
-  function start(itemIds: string[]) {
-    if (!itemIds.length) {
+  function start(items: PreviewQueueItem[]) {
+    if (!items.length) {
       return;
     }
-    const queue = [...itemIds];
+    const queue = items.map((item) => ({ ...item }));
     tokenRef.current += 1;
     const token = tokenRef.current;
     clearTimer();
@@ -53,7 +58,10 @@ export function useRankedPreviewQueue({
         return;
       }
       setPreview({ index, total: queue.length });
-      playInPlayer(queue[index]);
+      playInPlayer(
+        queue[index].itemId,
+        randomPreviewStart(sourceType, queue[index].duration),
+      );
       timerRef.current = window.setTimeout(
         () => playAt(index + 1),
         PREVIEW_SLICE_MS,
@@ -66,9 +74,31 @@ export function useRankedPreviewQueue({
   useEffect(
     () => () => {
       tokenRef.current += 1;
-      clearTimer();
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+      }
     },
+    [],
   );
 
   return { preview, start, stop };
+}
+
+function randomPreviewStart(sourceType: SourceType, duration: string | null) {
+  if (!isYouTubeSource(sourceType)) {
+    return 0;
+  }
+  const durationSeconds = parseDurationSeconds(duration);
+  const latestStart = Math.max(0, durationSeconds - PREVIEW_SLICE_MS / 1000);
+  return Math.floor(Math.random() * (latestStart + 1));
+}
+
+function parseDurationSeconds(duration: string | null) {
+  if (!duration || !/^\d+(?::\d+){1,2}$/.test(duration)) {
+    return 0;
+  }
+  return duration
+    .split(":")
+    .map(Number)
+    .reduce((total, part) => total * 60 + part, 0);
 }

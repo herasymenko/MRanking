@@ -12,6 +12,7 @@ export function RankedMedia({
   onClose,
   compact = false,
   showControl = true,
+  startSeconds = 0,
 }: {
   item: PackItem;
   sourceType: SourceType;
@@ -19,6 +20,7 @@ export function RankedMedia({
   onClose: () => void;
   compact?: boolean;
   showControl?: boolean;
+  startSeconds?: number;
 }) {
   const { t } = useI18n();
   return (
@@ -28,7 +30,7 @@ export function RankedMedia({
     >
       {playing ? (
         <iframe
-          src={mediaEmbedUrl(sourceType, item)}
+          src={mediaEmbedUrl(sourceType, item, startSeconds)}
           title={item.title}
           allow="autoplay; encrypted-media; picture-in-picture"
           allowFullScreen

@@ -9,7 +9,9 @@ import type { PlayRankedSound } from "./useRankedSounds";
 
 type DragSource = "group" | "leader";
 type PointerDrag = {
+  initialIndex: number;
   itemId: string;
+  origin: DOMRect;
   overPlayer: boolean;
   playerBounds: DOMRect | null;
   pointerId: number;
@@ -116,12 +118,20 @@ export function useRankedPointerOrder({
     ) {
       return;
     }
+    const fromHandle = Boolean(
+      (event.target as HTMLElement).closest(".ranked-drag-handle"),
+    );
+    if (event.pointerType !== "mouse" && !fromHandle) {
+      return;
+    }
     event.preventDefault();
     dragCleanupRef.current?.();
     const sourceElement = event.currentTarget;
     const origin = sourceElement.getBoundingClientRect();
     const session: PointerDrag = {
+      initialIndex: draftOrderRef.current.indexOf(itemId),
       itemId,
+      origin,
       overPlayer: false,
       playerBounds: playerRef.current?.getBoundingClientRect() ?? null,
       pointerId: event.pointerId,
@@ -207,7 +217,7 @@ export function useRankedPointerOrder({
       if (source !== "group" || overPlayer) {
         return;
       }
-      reorderAt(current.clientY, itemId);
+      reorderAt(y, itemId);
     };
 
     const end = (pointerEvent: PointerEvent | null, cancelled: boolean) => {
@@ -234,6 +244,9 @@ export function useRankedPointerOrder({
           restoreOriginalOrder();
         }
       } else if (!cancelled && session.started && source === "group") {
+        if (pointerEvent) {
+          reorderAt(pointerEvent.clientY - session.startY, itemId);
+        }
         const next = draftOrderRef.current;
         if (next.some((id, index) => id !== run.state.orderedGroup[index])) {
           onChange(setRankedGroupOrder(run, next));
@@ -245,16 +258,32 @@ export function useRankedPointerOrder({
       cleanup();
     };
 
-    const reorderAt = (clientY: number, draggedId: string) => {
+    const reorderAt = (deltaY: number, draggedId: string) => {
       const order = draftOrderRef.current;
       const fromIndex = order.indexOf(draggedId);
       if (fromIndex < 0) {
         return;
       }
-      const foundIndex = session.targetMidpoints.findIndex(
-        (midpoint) => midpoint > 0 && clientY < midpoint,
-      );
-      const targetIndex = foundIndex < 0 ? order.length - 1 : foundIndex;
+      const draggedTop = session.origin.top + deltaY;
+      const draggedBottom = draggedTop + session.origin.height;
+      let targetIndex = session.initialIndex;
+      if (deltaY > 0) {
+        for (
+          let index = session.initialIndex + 1;
+          index < session.targetMidpoints.length;
+          index += 1
+        ) {
+          if (draggedBottom >= session.targetMidpoints[index]) {
+            targetIndex = index;
+          }
+        }
+      } else if (deltaY < 0) {
+        for (let index = session.initialIndex - 1; index >= 0; index -= 1) {
+          if (draggedTop <= session.targetMidpoints[index]) {
+            targetIndex = index;
+          }
+        }
+      }
       if (targetIndex === session.targetIndex) {
         return;
       }

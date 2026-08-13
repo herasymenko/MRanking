@@ -2,15 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type RankedSoundCue = "drop" | "move" | "play" | "stop";
+export type RankedSoundCue = "drop" | "move" | "next" | "play" | "stop" | "top";
 export type PlayRankedSound = (cue: RankedSoundCue) => void;
 
 const STORAGE_KEY = "mranking:ranked-ui-volume:v1";
 const DEFAULT_VOLUME = 0.22;
 const MOVE_COOLDOWN_MS = 42;
+const CUE_COOLDOWN_MS = 28;
 const MAX_VOICES = 4;
 const NOISE_DURATION = 0.08;
 const noiseBuffers = new WeakMap<AudioContext, AudioBuffer>();
+const masterBuses = new WeakMap<AudioContext, AudioNode>();
 type NoiseLayer = {
   delay?: number;
   duration: number;
@@ -35,12 +37,20 @@ const SOUND_LAYERS: Record<RankedSoundCue, NoiseLayer[]> = {
     { duration: 0.009, filter: "bandpass", frequency: 1450, gain: 0.1, q: 0.65 },
     { delay: 0.005, duration: 0.022, filter: "lowpass", frequency: 480, gain: 0.06, q: 0.5 },
   ],
+  next: [
+    { duration: 0.011, filter: "highpass", frequency: 1900, gain: 0.115, q: 0.55 },
+    { delay: 0.034, duration: 0.018, filter: "bandpass", frequency: 900, gain: 0.06, q: 0.6 },
+  ],
+  top: [
+    { duration: 0.008, filter: "highpass", frequency: 2600, gain: 0.07, q: 0.5 },
+  ],
 };
 
 export function useRankedSounds() {
   const [volume, setVolumeState] = useState(DEFAULT_VOLUME);
   const contextRef = useRef<AudioContext | null>(null);
   const lastMoveRef = useRef(0);
+  const lastCueRef = useRef(0);
   const voicesRef = useRef(0);
 
   useEffect(() => {
@@ -91,6 +101,9 @@ export function useRankedSounds() {
         return;
       }
       const now = performance.now();
+      if (now - lastCueRef.current < CUE_COOLDOWN_MS) {
+        return;
+      }
       if (cue === "move" && now - lastMoveRef.current < MOVE_COOLDOWN_MS) {
         return;
       }
@@ -100,6 +113,7 @@ export function useRankedSounds() {
       if (cue === "move") {
         lastMoveRef.current = now;
       }
+      lastCueRef.current = now;
       const context = getAudioContext(contextRef);
       if (!context) {
         return;
@@ -178,7 +192,7 @@ function playClick(
     gain.gain.exponentialRampToValueAtTime(0.0001, end);
     source.connect(filter);
     filter.connect(gain);
-    gain.connect(context.destination);
+    gain.connect(getMasterBus(context));
     source.start(start);
     source.stop(end + 0.002);
     source.addEventListener(
@@ -205,9 +219,32 @@ function getNoiseBuffer(context: AudioContext) {
   const length = Math.ceil(context.sampleRate * NOISE_DURATION);
   const buffer = context.createBuffer(1, length, context.sampleRate);
   const channel = buffer.getChannelData(0);
+  let seed = 0x4d52414e;
   for (let index = 0; index < channel.length; index += 1) {
-    channel[index] = Math.random() * 2 - 1;
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    channel[index] = (seed / 4294967296) * 2 - 1;
   }
   noiseBuffers.set(context, buffer);
   return buffer;
+}
+
+function getMasterBus(context: AudioContext) {
+  const cached = masterBuses.get(context);
+  if (cached) {
+    return cached;
+  }
+  const lowpass = context.createBiquadFilter();
+  const compressor = context.createDynamicsCompressor();
+  lowpass.type = "lowpass";
+  lowpass.frequency.value = 5200;
+  lowpass.Q.value = 0.35;
+  compressor.threshold.value = -26;
+  compressor.knee.value = 18;
+  compressor.ratio.value = 7;
+  compressor.attack.value = 0.001;
+  compressor.release.value = 0.06;
+  lowpass.connect(compressor);
+  compressor.connect(context.destination);
+  masterBuses.set(context, lowpass);
+  return lowpass;
 }

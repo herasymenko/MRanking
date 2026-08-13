@@ -12,6 +12,8 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     soundHook,
     soundControl,
     previewQueue,
+    media,
+    packDomain,
     library,
     result,
     runsApi,
@@ -28,6 +30,8 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     read("../app/components/ranked/useRankedSounds.ts"),
     read("../app/components/ranked/RankedSoundControl.tsx"),
     read("../app/components/ranked/useRankedPreviewQueue.ts"),
+    read("../app/components/ranked/RankedMedia.tsx"),
+    read("../app/domain/pack.ts"),
     read("../app/components/modes/RankedLibraryView.tsx"),
     read("../app/components/ranked/RankedResultView.tsx"),
     read("../app/api/ranked-runs/route.ts"),
@@ -50,7 +54,7 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(pointerOrder, /ranked-drag-preview/);
   assert.match(pointerOrder, /animateRankedPreviewOpen/);
   assert.match(pointerOrder, /playInPlayer\(itemId\)/);
-  assert.match(playerHook, /function playInPlayer\(itemId: string\)/);
+  assert.match(playerHook, /function playInPlayer\(itemId: string, startSeconds = 0\)/);
   assert.match(playerHook, /loadKeyRef\.current \+= 1/);
   assert.match(playerHook, /ranked-card-opening/);
   assert.match(playerHook, /ranked-card-closing/);
@@ -61,7 +65,8 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.doesNotMatch(playerHook, /scale\(\.18\)/);
   assert.match(pointerOrder, /playSound\("move"\)/);
   assert.match(pointerOrder, /playSound\("drop"\)/);
-  assert.match(soundHook, /type RankedSoundCue = "drop" \| "move" \| "play" \| "stop"/);
+  assert.match(soundHook, /"next"/);
+  assert.match(soundHook, /"top"/);
   assert.match(soundHook, /new AudioContextConstructor\(\)/);
   assert.match(soundHook, /mranking:ranked-ui-volume:v1/);
   assert.match(soundHook, /webkitAudioContext/);
@@ -69,9 +74,13 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(soundHook, /createBufferSource/);
   assert.match(soundHook, /createBiquadFilter/);
   assert.doesNotMatch(soundHook, /createOscillator/);
-  assert.match(previewQueue, /PREVIEW_SLICE_MS = 12_000/);
+  assert.match(previewQueue, /PREVIEW_SLICE_MS = 7_000/);
   assert.match(previewQueue, /tokenRef/);
-  assert.match(previewQueue, /playInPlayer\(queue\[index\]\)/);
+  assert.match(previewQueue, /randomPreviewStart/);
+  assert.match(previewQueue, /parseDurationSeconds/);
+  assert.match(previewQueue, /\[\],\s*\);/);
+  assert.match(media, /mediaEmbedUrl\(sourceType, item, startSeconds\)/);
+  assert.match(packDomain, /&start=\$\{start\}/);
   assert.match(soundControl, /type="range"/);
   assert.match(soundControl, /ranked-sound-trigger/);
   assert.match(game, /key=\{`\$\{activeMedia\.id\}-\$\{player\?\.loadKey\}`\}/);
@@ -84,6 +93,9 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(game, /PREVIEW ALL 4/);
   assert.match(game, /function playManually\(itemId: string\) \{\s*stopPreview/);
   assert.match(game, /function toggleTrack\(itemId: string, source: HTMLElement\) \{\s*stopPreview/);
+  assert.match(game, /playSound\("next"\)/);
+  assert.match(game, /playSound\("top"\)/);
+  assert.match(game, /ranked-match-ghosts/);
   assert.match(game, /"STOP"/);
   assert.doesNotMatch(game, /"IN PLAYER"/);
   assert.doesNotMatch(game, /"PAUSE"|"Pause track"/);
@@ -130,6 +142,11 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(styles, /ranked-choice-art/);
   assert.match(styles, /ranked-active-glow/);
   assert.match(styles, /has-active-player/);
+  assert.match(styles, /ranked-match-ghost/);
+  assert.match(styles, /@media \(hover: none\), \(pointer: coarse\)/);
+  assert.match(pointerOrder, /event\.pointerType !== "mouse" && !fromHandle/);
+  assert.match(pointerOrder, /draggedBottom >= session\.targetMidpoints/);
+  assert.match(pointerOrder, /draggedTop <= session\.targetMidpoints/);
   assert.match(styles, /ranked-player-receive/);
   assert.match(styles, /ranked-workspace \{[^}]*flex: 1 1 auto/);
   assert.match(app, /compact=\{view !== "home"\}/);
