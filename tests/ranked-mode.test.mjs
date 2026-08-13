@@ -11,7 +11,6 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     playerHook,
     soundHook,
     soundControl,
-    previewQueue,
     media,
     packDomain,
     library,
@@ -29,7 +28,6 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     read("../app/components/ranked/useRankedPlayer.ts"),
     read("../app/components/ranked/useRankedSounds.ts"),
     read("../app/components/ranked/RankedSoundControl.tsx"),
-    read("../app/components/ranked/useRankedPreviewQueue.ts"),
     read("../app/components/ranked/RankedMedia.tsx"),
     read("../app/domain/pack.ts"),
     read("../app/components/modes/RankedLibraryView.tsx"),
@@ -74,11 +72,6 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(soundHook, /createBufferSource/);
   assert.match(soundHook, /createBiquadFilter/);
   assert.doesNotMatch(soundHook, /createOscillator/);
-  assert.match(previewQueue, /PREVIEW_SLICE_MS = 7_000/);
-  assert.match(previewQueue, /tokenRef/);
-  assert.match(previewQueue, /randomPreviewStart/);
-  assert.match(previewQueue, /parseDurationSeconds/);
-  assert.match(previewQueue, /\[\],\s*\);/);
   assert.match(media, /mediaEmbedUrl\(sourceType, item, startSeconds\)/);
   assert.match(packDomain, /&start=\$\{start\}/);
   assert.match(soundControl, /type="range"/);
@@ -90,12 +83,14 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.doesNotMatch(game, /targetRounds|Round \{current\}/);
   assert.match(game, /className="ranked-choice-slot"/);
   assert.match(game, /ranked-choice-art/);
-  assert.match(game, /PREVIEW ALL 4/);
-  assert.match(game, /function playManually\(itemId: string\) \{\s*stopPreview/);
-  assert.match(game, /function toggleTrack\(itemId: string, source: HTMLElement\) \{\s*stopPreview/);
+  assert.doesNotMatch(game, /PREVIEW ALL 4|STOP PREVIEW|useRankedPreviewQueue/);
+  assert.match(game, /confirmRankedQualifier/);
+  assert.match(game, /Save one\. Cut the rest\./);
+  assert.match(game, /Tap one track to keep it/);
   assert.match(game, /playSound\("next"\)/);
+  assert.match(game, /playSound\("undo"\)/);
   assert.match(game, /playSound\("top"\)/);
-  assert.match(game, /ranked-match-ghosts/);
+  assert.match(game, /ranked-match-shift/);
   assert.match(game, /"STOP"/);
   assert.doesNotMatch(game, /"IN PLAYER"/);
   assert.doesNotMatch(game, /"PAUSE"|"Pause track"/);
@@ -142,7 +137,8 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(styles, /ranked-choice-art/);
   assert.match(styles, /ranked-active-glow/);
   assert.match(styles, /has-active-player/);
-  assert.match(styles, /ranked-match-ghost/);
+  assert.match(styles, /ranked-match-shift/);
+  assert.match(styles, /ranked-qualifier-prompt/);
   assert.match(styles, /@media \(hover: none\), \(pointer: coarse\)/);
   assert.match(pointerOrder, /event\.pointerType !== "mouse" && !fromHandle/);
   assert.match(pointerOrder, /draggedBottom >= session\.targetMidpoints/);

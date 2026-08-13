@@ -94,9 +94,9 @@ function sanitizeSnapshot(value: JsonValue | undefined): RankedSnapshot | null {
   const phase = value.phase;
   const round = safeInteger(value.round, 1, 20);
   const entries = sanitizeEntries(value.entries);
-  const currentGroup = stringArray(value.currentGroup, 4);
-  const orderedGroup = stringArray(value.orderedGroup, 4);
-  const pendingGroups = nestedStringArray(value.pendingGroups, 10_000, 4);
+  const currentGroup = stringArray(value.currentGroup, 8);
+  const orderedGroup = stringArray(value.orderedGroup, 8);
+  const pendingGroups = nestedStringArray(value.pendingGroups, 10_000, 8);
   const pairKeys = stringArray(value.pairKeys, 100_000, 1024);
   const completedActions = safeInteger(value.completedActions, 0, 100_000);
   const qualifiedIds = stringArray(value.qualifiedIds, 100);

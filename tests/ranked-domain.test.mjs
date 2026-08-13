@@ -68,34 +68,48 @@ test("small packs receive a complete ranked result", () => {
 
 test("large packs qualify exactly 100 finalists before ranking", () => {
   let run = ranked.createRankedRun(pack(128), seededRandom(91));
-  const qualificationAppearances = new Map();
-  const qualificationPairs = new Set();
+  const reviewed = new Set();
   assert.equal(run.state.phase, "qualification");
-  assert.equal(run.state.totalActions, 278);
+  assert.equal(run.state.targetRounds, 1);
+  assert.equal(run.state.qualifiedIds.length, 94);
+  assert.equal(run.state.totalActions, 156);
 
   while (run.state.phase === "qualification") {
     for (const id of run.state.currentGroup) {
-      qualificationAppearances.set(id, (qualificationAppearances.get(id) ?? 0) + 1);
+      assert.equal(reviewed.has(id), false);
+      reviewed.add(id);
     }
-    for (let left = 0; left < run.state.currentGroup.length; left += 1) {
-      for (let right = left + 1; right < run.state.currentGroup.length; right += 1) {
-        const key = [run.state.currentGroup[left], run.state.currentGroup[right]].sort().join("|");
-        assert.equal(qualificationPairs.has(key), false, `repeated qualification pair ${key}`);
-        qualificationPairs.add(key);
-      }
-    }
-    run = ranked.confirmRankedOrder(run);
+    assert.ok(run.state.currentGroup.length >= 5);
+    assert.ok(run.state.currentGroup.length <= 6);
+    run = ranked.confirmRankedQualifier(
+      run,
+      run.state.currentGroup.at(-1),
+    );
   }
   assert.equal(run.state.phase, "ranking");
   assert.equal(run.state.qualifiedIds.length, 100);
   assert.equal(run.state.entries.length, 100);
   assert.ok(run.state.entries.every((entry) => entry.appearances === 0));
-  assert.equal(qualificationAppearances.size, 128);
-  assert.ok([...qualificationAppearances.values()].every((count) => count === 4));
+  assert.equal(reviewed.size, 34);
+  assert.equal(run.state.completedActions, 6);
 
   const complete = finish(run);
   assert.equal(complete.state.finalRanking.length, 100);
   assert.equal(complete.state.completedActions, complete.state.totalActions);
+});
+
+test("fast qualification scales to the largest supported pack", () => {
+  let run = ranked.createRankedRun(pack(512), seededRandom(13));
+  let actions = 0;
+  while (run.state.phase === "qualification") {
+    assert.ok(run.state.currentGroup.length >= 5);
+    assert.ok(run.state.currentGroup.length <= 6);
+    run = ranked.confirmRankedQualifier(run, run.state.currentGroup[0]);
+    actions += 1;
+  }
+  assert.equal(actions, 83);
+  assert.equal(run.state.qualifiedIds.length, 100);
+  assert.equal(run.state.entries.length, 100);
 });
 
 test("undo restores the previous group and scores", () => {

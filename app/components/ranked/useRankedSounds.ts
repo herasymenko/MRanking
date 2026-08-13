@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type RankedSoundCue = "drop" | "move" | "next" | "play" | "stop" | "top";
+export type RankedSoundCue = "drop" | "move" | "next" | "play" | "stop" | "top" | "undo";
 export type PlayRankedSound = (cue: RankedSoundCue) => void;
 
 const STORAGE_KEY = "mranking:ranked-ui-volume:v1";
@@ -38,11 +38,16 @@ const SOUND_LAYERS: Record<RankedSoundCue, NoiseLayer[]> = {
     { delay: 0.005, duration: 0.022, filter: "lowpass", frequency: 480, gain: 0.06, q: 0.5 },
   ],
   next: [
-    { duration: 0.011, filter: "highpass", frequency: 1900, gain: 0.115, q: 0.55 },
-    { delay: 0.034, duration: 0.018, filter: "bandpass", frequency: 900, gain: 0.06, q: 0.6 },
+    { duration: 0.028, filter: "lowpass", frequency: 760, gain: 0.09, q: 0.5 },
+    { delay: 0.026, duration: 0.035, filter: "bandpass", frequency: 1240, gain: 0.075, q: 1.15 },
+    { delay: 0.06, duration: 0.024, filter: "highpass", frequency: 2850, gain: 0.035, q: 0.55 },
   ],
   top: [
     { duration: 0.008, filter: "highpass", frequency: 2600, gain: 0.07, q: 0.5 },
+  ],
+  undo: [
+    { duration: 0.018, filter: "bandpass", frequency: 1450, gain: 0.07, q: 0.9 },
+    { delay: 0.028, duration: 0.034, filter: "lowpass", frequency: 520, gain: 0.065, q: 0.55 },
   ],
 };
 

@@ -9,13 +9,12 @@ import {
   appendRankedPairKeys,
   buildRankedRound,
   rankedGroupCount,
-  rankedOpponentStrength,
 } from "./rankedPairing";
 
 export { rankedGroupCount } from "./rankedPairing";
 
-const QUALIFICATION_ROUNDS = 4;
 const FINALIST_LIMIT = 100;
+const FAST_QUALIFIER_SIZE = 6;
 
 export function createRankedRun(
   pack: Pick<Pack, "id" | "items">,
@@ -30,10 +29,13 @@ export function createRankedRun(
   }));
   const qualification = entries.length > FINALIST_LIMIT;
   const phase = qualification ? "qualification" : "ranking";
-  const targetRounds = qualification
-    ? QUALIFICATION_ROUNDS
-    : rankedRoundCount(entries.length);
-  const groups = buildRankedRound(entries, [], 1, phase);
+  const targetRounds = qualification ? 1 : rankedRoundCount(entries.length);
+  const qualificationGroups = qualification
+    ? buildFastQualification(entries)
+    : null;
+  const groups = qualificationGroups
+    ? qualificationGroups.groups
+    : buildRankedRound(entries, [], 1, phase);
   const now = new Date().toISOString();
   return {
     id: `ranked-${crypto.randomUUID()}`,
@@ -48,7 +50,9 @@ export function createRankedRun(
       pendingGroups: groups.slice(1),
       pairKeys: [],
       completedActions: 0,
-      qualifiedIds: qualification ? [] : entries.map((entry) => entry.itemId),
+      qualifiedIds: qualificationGroups
+        ? qualificationGroups.byes
+        : entries.map((entry) => entry.itemId),
       status: "active",
       totalActions: estimateRankedActions(entries.length),
       targetRounds,
@@ -65,9 +69,18 @@ export function estimateRankedActions(itemCount: number) {
     return rankedGroupCount(itemCount) * rankedRoundCount(itemCount);
   }
   return (
-    rankedGroupCount(itemCount) * QUALIFICATION_ROUNDS +
+    qualificationActionCount(itemCount) +
     rankedGroupCount(FINALIST_LIMIT) * rankedRoundCount(FINALIST_LIMIT)
   );
+}
+
+export function qualificationActionCount(itemCount: number) {
+  return itemCount > FINALIST_LIMIT
+    ? Math.min(
+        FINALIST_LIMIT,
+        Math.ceil((itemCount - FINALIST_LIMIT) / (FAST_QUALIFIER_SIZE - 1)),
+      )
+    : 0;
 }
 
 export function rankedRoundCount(itemCount: number) {
@@ -115,6 +128,9 @@ export function confirmRankedOrder(run: RankedRun): RankedRun {
   }
 
   const snapshot = rankedSnapshot(state);
+  if (state.phase === "qualification") {
+    return confirmQualification(run, snapshot);
+  }
   const entries = scoreGroup(state.entries, state.orderedGroup);
   const pairKeys = appendRankedPairKeys(state.pairKeys, state.currentGroup);
   const completedActions = state.completedActions + 1;
@@ -149,10 +165,6 @@ export function confirmRankedOrder(run: RankedRun): RankedRun {
     });
   }
 
-  if (state.phase === "qualification") {
-    return startFinalRanking(run, state, entries, pairKeys, completedActions, snapshot);
-  }
-
   const finalRanking = rankedLeaderboard(entries).map(({ itemId, points }) => ({
     itemId,
     points,
@@ -172,6 +184,20 @@ export function confirmRankedOrder(run: RankedRun): RankedRun {
   });
 }
 
+export function confirmRankedQualifier(run: RankedRun, itemId: string) {
+  if (
+    run.state.phase !== "qualification" ||
+    !run.state.currentGroup.includes(itemId)
+  ) {
+    return run;
+  }
+  const orderedGroup = [
+    itemId,
+    ...run.state.currentGroup.filter((candidate) => candidate !== itemId),
+  ];
+  return confirmRankedOrder(setRankedGroupOrder(run, orderedGroup));
+}
+
 export function undoRankedOrder(run: RankedRun): RankedRun {
   const snapshot = run.state.undoStack.at(-1);
   if (!snapshot) {
@@ -183,7 +209,7 @@ export function undoRankedOrder(run: RankedRun): RankedRun {
     status: "active",
     targetRounds:
       snapshot.phase === "qualification"
-        ? QUALIFICATION_ROUNDS
+        ? 1
         : rankedRoundCount(snapshot.entries.length),
     finalRanking: [],
     manualRanking: [],
@@ -230,16 +256,13 @@ export function rankedProgressLabel(state: RankedSessionState) {
 function startFinalRanking(
   run: RankedRun,
   state: RankedSessionState,
-  entries: RankedEntry[],
+  qualifiedIds: string[],
   pairKeys: string[],
   completedActions: number,
   snapshot: RankedSnapshot,
 ) {
-  const qualifiedIds = rankQualificationEntries(entries, pairKeys)
-    .slice(0, FINALIST_LIMIT)
-    .map((entry) => entry.itemId);
   const qualified = qualifiedIds.map((itemId) => {
-    const previous = entries.find((entry) => entry.itemId === itemId)!;
+    const previous = state.entries.find((entry) => entry.itemId === itemId)!;
     return { ...previous, points: 0, appearances: 0, firstPlaces: 0 };
   });
   const groups = buildRankedRound(qualified, pairKeys, 1, "ranking");
@@ -259,6 +282,48 @@ function startFinalRanking(
   });
 }
 
+function confirmQualification(run: RankedRun, snapshot: RankedSnapshot) {
+  const state = run.state;
+  const selectedId = state.orderedGroup[0];
+  const qualifiedIds = [...state.qualifiedIds, selectedId];
+  const completedActions = state.completedActions + 1;
+  if (state.pendingGroups.length > 0) {
+    const [currentGroup, ...pendingGroups] = state.pendingGroups;
+    return withRankedState(run, {
+      ...state,
+      completedActions,
+      currentGroup,
+      orderedGroup: currentGroup,
+      pendingGroups,
+      qualifiedIds,
+      undoStack: [snapshot],
+    });
+  }
+  return startFinalRanking(
+    run,
+    state,
+    qualifiedIds,
+    state.pairKeys,
+    completedActions,
+    snapshot,
+  );
+}
+
+function buildFastQualification(entries: RankedEntry[]) {
+  const pool = [...entries].sort((left, right) => left.seed - right.seed);
+  const actionCount = qualificationActionCount(entries.length);
+  const groupedItemCount = entries.length - (FINALIST_LIMIT - actionCount);
+  const baseSize = Math.floor(groupedItemCount / actionCount);
+  const largerGroups = groupedItemCount % actionCount;
+  const groups: string[][] = [];
+  for (let index = 0; index < actionCount; index += 1) {
+    const size = baseSize + (index < largerGroups ? 1 : 0);
+    const group = pool.splice(0, size).map((entry) => entry.itemId);
+    groups.push(group);
+  }
+  return { byes: pool.map((entry) => entry.itemId), groups };
+}
+
 function scoreGroup(entries: RankedEntry[], orderedGroup: string[]) {
   const placements = new Map(orderedGroup.map((id, index) => [id, index]));
   const denominator = Math.max(1, orderedGroup.length - 1);
@@ -275,17 +340,6 @@ function scoreGroup(entries: RankedEntry[], orderedGroup: string[]) {
       firstPlaces: entry.firstPlaces + (placement === 0 ? 1 : 0),
     };
   });
-}
-
-function rankQualificationEntries(entries: RankedEntry[], pairKeys: string[]) {
-  const strength = rankedOpponentStrength(entries, pairKeys);
-  return [...entries].sort(
-    (left, right) =>
-      right.points - left.points ||
-      (strength.get(right.itemId) ?? 0) - (strength.get(left.itemId) ?? 0) ||
-      right.firstPlaces - left.firstPlaces ||
-      left.seed - right.seed,
-  );
 }
 
 function rankedSnapshot(state: RankedSessionState): RankedSnapshot {
