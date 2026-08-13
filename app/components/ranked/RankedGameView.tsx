@@ -15,6 +15,7 @@ import { RankedMedia } from "./RankedMedia";
 import { RankedSoundControl } from "./RankedSoundControl";
 import { useRankedPlayer } from "./useRankedPlayer";
 import { useRankedPointerOrder } from "./useRankedPointerOrder";
+import { useRankedPreviewQueue } from "./useRankedPreviewQueue";
 import { useRankedSounds } from "./useRankedSounds";
 
 export function RankedGameView({
@@ -42,6 +43,23 @@ export function RankedGameView({
     toggleFromTile,
   } = useRankedPlayer(playSound);
   const {
+    preview,
+    start: startPreview,
+    stop: stopPreview,
+  } = useRankedPreviewQueue({
+    closePlayer,
+    playInPlayer,
+    onStart: () => playSound("play"),
+  });
+  function playManually(itemId: string) {
+    stopPreview({ close: false });
+    playInPlayer(itemId);
+  }
+  function toggleTrack(itemId: string, source: HTMLElement) {
+    stopPreview({ close: false });
+    toggleFromTile(itemId, source);
+  }
+  const {
     beginPointerDrag,
     draftOrder,
     dragged,
@@ -51,7 +69,7 @@ export function RankedGameView({
     run,
     onChange,
     playerRef,
-    playInPlayer,
+    playInPlayer: playManually,
     playSound,
   });
   const itemMap = useMemo(
@@ -59,6 +77,9 @@ export function RankedGameView({
     [pack.items],
   );
   const activeMedia = player ? itemMap.get(player.itemId) ?? null : null;
+  const activeGroupItem = Boolean(
+    activeMedia && draftOrder.includes(activeMedia.id),
+  );
   const leaders = rankedLeaderboard(run.state.entries).slice(0, 100);
   const progress = Math.min(
     100,
@@ -67,13 +88,13 @@ export function RankedGameView({
   );
 
   function confirm() {
-    closePlayer();
+    stopPreview();
     onChange(confirmRankedOrder(run));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function undo() {
-    closePlayer();
+    stopPreview();
     onChange(undoRankedOrder(run));
   }
 
@@ -114,7 +135,7 @@ export function RankedGameView({
       </header>
       <progress className="ranked-progress" max={100} value={progress} />
 
-      <div className={`ranked-workspace ${topOpen ? "top-open" : ""}`}>
+      <div className={`ranked-workspace ${topOpen ? "top-open" : ""} ${activeGroupItem ? "has-active-player" : ""}`}>
         <div className="ranked-order-panel">
           <div className="ranked-group-list">
             {draftOrder.map((id, index) => {
@@ -138,6 +159,13 @@ export function RankedGameView({
                       beginPointerDrag(event, id, "group")
                     }
                   >
+                    <RemoteImage
+                      className="ranked-choice-art"
+                      src={item.thumbnailUrl}
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                    />
                     <div className="ranked-choice-copy">
                       <h3>{item.title}</h3>
                       <p>{item.channel}{item.duration ? ` · ${item.duration}` : ""}</p>
@@ -148,7 +176,7 @@ export function RankedGameView({
                       aria-label={t(player?.itemId === id ? "Stop track" : "Play track")}
                       aria-pressed={player?.itemId === id}
                       onClick={(event) =>
-                        toggleFromTile(
+                        toggleTrack(
                           id,
                           event.currentTarget.closest(
                             ".ranked-choice-row",
@@ -167,9 +195,33 @@ export function RankedGameView({
               );
             })}
           </div>
-          <button type="button" className="ranked-confirm" onClick={confirm}>
-            <span>{t("NEXT")}</span>
-          </button>
+          <div className="ranked-order-controls">
+            <button
+              type="button"
+              className={`ranked-preview-all ${preview ? "active" : ""}`}
+              onClick={() => {
+                if (preview) {
+                  playSound("stop");
+                  stopPreview();
+                } else {
+                  startPreview(draftOrder);
+                }
+              }}
+            >
+              <span aria-hidden="true">{preview ? "■" : "▶"}</span>
+              <strong>
+                {preview
+                  ? t("STOP PREVIEW · {current}/{total}", {
+                      current: preview.index + 1,
+                      total: preview.total,
+                    })
+                  : t("PREVIEW ALL 4")}
+              </strong>
+            </button>
+            <button type="button" className="ranked-confirm" onClick={confirm}>
+              <span>{t("NEXT")}</span>
+            </button>
+          </div>
         </div>
 
         <section

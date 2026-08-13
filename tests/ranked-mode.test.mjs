@@ -11,6 +11,7 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     playerHook,
     soundHook,
     soundControl,
+    previewQueue,
     library,
     result,
     runsApi,
@@ -26,6 +27,7 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     read("../app/components/ranked/useRankedPlayer.ts"),
     read("../app/components/ranked/useRankedSounds.ts"),
     read("../app/components/ranked/RankedSoundControl.tsx"),
+    read("../app/components/ranked/useRankedPreviewQueue.ts"),
     read("../app/components/modes/RankedLibraryView.tsx"),
     read("../app/components/ranked/RankedResultView.tsx"),
     read("../app/api/ranked-runs/route.ts"),
@@ -64,6 +66,12 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(soundHook, /mranking:ranked-ui-volume:v1/);
   assert.match(soundHook, /webkitAudioContext/);
   assert.match(soundHook, /MOVE_COOLDOWN_MS/);
+  assert.match(soundHook, /createBufferSource/);
+  assert.match(soundHook, /createBiquadFilter/);
+  assert.doesNotMatch(soundHook, /createOscillator/);
+  assert.match(previewQueue, /PREVIEW_SLICE_MS = 12_000/);
+  assert.match(previewQueue, /tokenRef/);
+  assert.match(previewQueue, /playInPlayer\(queue\[index\]\)/);
   assert.match(soundControl, /type="range"/);
   assert.match(soundControl, /ranked-sound-trigger/);
   assert.match(game, /key=\{`\$\{activeMedia\.id\}-\$\{player\?\.loadKey\}`\}/);
@@ -72,6 +80,10 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.doesNotMatch(game, /ranked-phase|"Qualification"|"Top 100 ranking"/);
   assert.doesNotMatch(game, /targetRounds|Round \{current\}/);
   assert.match(game, /className="ranked-choice-slot"/);
+  assert.match(game, /ranked-choice-art/);
+  assert.match(game, /PREVIEW ALL 4/);
+  assert.match(game, /function playManually\(itemId: string\) \{\s*stopPreview/);
+  assert.match(game, /function toggleTrack\(itemId: string, source: HTMLElement\) \{\s*stopPreview/);
   assert.match(game, /"STOP"/);
   assert.doesNotMatch(game, /"IN PLAYER"/);
   assert.doesNotMatch(game, /"PAUSE"|"Pause track"/);
@@ -115,6 +127,9 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(styles, /ranked-sound-panel/);
   assert.match(styles, /ranked-drag-preview[^}]*transition: none !important/);
   assert.match(styles, /ranked-choice-slot/);
+  assert.match(styles, /ranked-choice-art/);
+  assert.match(styles, /ranked-active-glow/);
+  assert.match(styles, /has-active-player/);
   assert.match(styles, /ranked-player-receive/);
   assert.match(styles, /ranked-workspace \{[^}]*flex: 1 1 auto/);
   assert.match(app, /compact=\{view !== "home"\}/);

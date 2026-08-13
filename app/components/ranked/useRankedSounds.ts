@@ -9,14 +9,32 @@ const STORAGE_KEY = "mranking:ranked-ui-volume:v1";
 const DEFAULT_VOLUME = 0.22;
 const MOVE_COOLDOWN_MS = 42;
 const MAX_VOICES = 4;
-const SOUND_SHAPES: Record<
-  RankedSoundCue,
-  { duration: number; endFrequency: number; gain: number; startFrequency: number }
-> = {
-  move: { duration: 0.022, endFrequency: 620, gain: 0.035, startFrequency: 760 },
-  play: { duration: 0.045, endFrequency: 620, gain: 0.048, startFrequency: 920 },
-  drop: { duration: 0.055, endFrequency: 850, gain: 0.05, startFrequency: 540 },
-  stop: { duration: 0.05, endFrequency: 330, gain: 0.044, startFrequency: 560 },
+const NOISE_DURATION = 0.08;
+const noiseBuffers = new WeakMap<AudioContext, AudioBuffer>();
+type NoiseLayer = {
+  delay?: number;
+  duration: number;
+  filter: BiquadFilterType;
+  frequency: number;
+  gain: number;
+  q: number;
+};
+const SOUND_LAYERS: Record<RankedSoundCue, NoiseLayer[]> = {
+  move: [
+    { duration: 0.008, filter: "highpass", frequency: 2400, gain: 0.11, q: 0.55 },
+  ],
+  play: [
+    { duration: 0.01, filter: "bandpass", frequency: 2300, gain: 0.12, q: 0.7 },
+    { delay: 0.006, duration: 0.016, filter: "lowpass", frequency: 850, gain: 0.055, q: 0.5 },
+  ],
+  drop: [
+    { duration: 0.011, filter: "highpass", frequency: 1800, gain: 0.13, q: 0.5 },
+    { delay: 0.008, duration: 0.024, filter: "bandpass", frequency: 650, gain: 0.065, q: 0.65 },
+  ],
+  stop: [
+    { duration: 0.009, filter: "bandpass", frequency: 1450, gain: 0.1, q: 0.65 },
+    { delay: 0.005, duration: 0.022, filter: "lowpass", frequency: 480, gain: 0.06, q: 0.5 },
+  ],
 };
 
 export function useRankedSounds() {
@@ -62,7 +80,7 @@ export function useRankedSounds() {
 
   const unlockSound = useCallback(() => {
     const context = getAudioContext(contextRef);
-    if (context?.state === "suspended") {
+    if (context && context.state !== "running") {
       void context.resume().catch(() => undefined);
     }
   }, []);
@@ -86,21 +104,27 @@ export function useRankedSounds() {
       if (!context) {
         return;
       }
-      if (context.state === "suspended") {
-        void context.resume().catch(() => undefined);
-        return;
-      }
-      if (context.state !== "running") {
-        return;
-      }
-      voicesRef.current += 1;
-      try {
-        playClick(context, cue, volume, () => {
+      const launch = () => {
+        if (context.state !== "running" || voicesRef.current >= MAX_VOICES) {
+          return;
+        }
+        voicesRef.current += 1;
+        try {
+          playClick(context, cue, volume, () => {
+            voicesRef.current = Math.max(0, voicesRef.current - 1);
+          });
+        } catch {
           voicesRef.current = Math.max(0, voicesRef.current - 1);
-        });
-      } catch {
-        voicesRef.current = Math.max(0, voicesRef.current - 1);
+        }
+      };
+      if (context.state !== "running") {
+        void context
+          .resume()
+          .then(launch)
+          .catch(() => undefined);
+        return;
       }
+      launch();
     },
     [volume],
   );
@@ -133,31 +157,57 @@ function playClick(
   volume: number,
   onEnded: () => void,
 ) {
-  const shape = SOUND_SHAPES[cue];
-  const start = context.currentTime + 0.002;
-  const end = start + shape.duration;
-  const oscillator = context.createOscillator();
-  const gain = context.createGain();
-  oscillator.type = "triangle";
-  oscillator.frequency.setValueAtTime(shape.startFrequency, start);
-  oscillator.frequency.exponentialRampToValueAtTime(shape.endFrequency, end);
-  gain.gain.setValueAtTime(0.0001, start);
-  gain.gain.exponentialRampToValueAtTime(
-    Math.max(0.0001, volume * shape.gain),
-    start + 0.003,
-  );
-  gain.gain.exponentialRampToValueAtTime(0.0001, end);
-  oscillator.connect(gain);
-  gain.connect(context.destination);
-  oscillator.start(start);
-  oscillator.stop(end + 0.006);
-  oscillator.addEventListener(
-    "ended",
-    () => {
-      oscillator.disconnect();
-      gain.disconnect();
-      onEnded();
-    },
-    { once: true },
-  );
+  const layers = SOUND_LAYERS[cue];
+  let remaining = layers.length;
+  const noise = getNoiseBuffer(context);
+  layers.forEach((layer) => {
+    const start = context.currentTime + 0.002 + (layer.delay ?? 0);
+    const end = start + layer.duration;
+    const source = context.createBufferSource();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+    source.buffer = noise;
+    filter.type = layer.filter;
+    filter.frequency.setValueAtTime(layer.frequency, start);
+    filter.Q.setValueAtTime(layer.q, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(
+      Math.max(0.0001, volume * layer.gain),
+      start + 0.0007,
+    );
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(context.destination);
+    source.start(start);
+    source.stop(end + 0.002);
+    source.addEventListener(
+      "ended",
+      () => {
+        source.disconnect();
+        filter.disconnect();
+        gain.disconnect();
+        remaining -= 1;
+        if (remaining === 0) {
+          onEnded();
+        }
+      },
+      { once: true },
+    );
+  });
+}
+
+function getNoiseBuffer(context: AudioContext) {
+  const cached = noiseBuffers.get(context);
+  if (cached) {
+    return cached;
+  }
+  const length = Math.ceil(context.sampleRate * NOISE_DURATION);
+  const buffer = context.createBuffer(1, length, context.sampleRate);
+  const channel = buffer.getChannelData(0);
+  for (let index = 0; index < channel.length; index += 1) {
+    channel[index] = Math.random() * 2 - 1;
+  }
+  noiseBuffers.set(context, buffer);
+  return buffer;
 }
