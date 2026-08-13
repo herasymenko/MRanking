@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Pack, RankedRun } from "../../../lib/types";
 import {
-  confirmRankedQualifier,
+  confirmRankedQualifiers,
   confirmRankedOrder,
   qualificationActionCount,
   rankedLeaderboard,
@@ -34,12 +34,10 @@ export function RankedGameView({
 }) {
   const { t } = useI18n();
   const [topOpen, setTopOpen] = useState(false);
-  const [matchSummary, setMatchSummary] = useState<
-    Array<{ delta: number }> | null
-  >(null);
-  const [qualificationPick, setQualificationPick] = useState<string | null>(null);
-  const summaryTimerRef = useRef<number | null>(null);
-  const qualificationTimerRef = useRef<number | null>(null);
+  const [qualificationSelection, setQualificationSelection] = useState<string[]>([]);
+  const [advancing, setAdvancing] = useState(false);
+  const [stageTransition, setStageTransition] = useState<"ranking" | "result" | null>(null);
+  const actionTimerRef = useRef<number | null>(null);
   const { playSound, setVolume, unlockSound, volume } = useRankedSounds();
   const {
     closePlayer,
@@ -92,74 +90,62 @@ export function RankedGameView({
 
   useEffect(
     () => () => {
-      if (summaryTimerRef.current !== null) {
-        window.clearTimeout(summaryTimerRef.current);
-      }
-      if (qualificationTimerRef.current !== null) {
-        window.clearTimeout(qualificationTimerRef.current);
+      if (actionTimerRef.current !== null) {
+        window.clearTimeout(actionTimerRef.current);
       }
     },
     [],
   );
 
   function confirm() {
-    if (isQualification) {
+    if (advancing || stageTransition) {
       return;
     }
     playSound("next");
-    const before = new Map(
-      rankedLeaderboard(run.state.entries).map((entry, index) => [
-        entry.itemId,
-        index,
-      ]),
-    );
-    const nextRun = confirmRankedOrder(run);
-    const after = new Map(
-      rankedLeaderboard(nextRun.state.entries).map((entry, index) => [
-        entry.itemId,
-        index,
-      ]),
-    );
-    const summary = draftOrder.flatMap((itemId) => {
-      const previousPlace = before.get(itemId);
-      const nextPlace = after.get(itemId);
-      return previousPlace !== undefined && nextPlace !== undefined
-        ? [{
-            delta: previousPlace - nextPlace,
-          }]
-        : [];
-    });
-    setMatchSummary(summary);
-    if (summaryTimerRef.current !== null) {
-      window.clearTimeout(summaryTimerRef.current);
-    }
-    summaryTimerRef.current = window.setTimeout(() => {
-      setMatchSummary(null);
-      summaryTimerRef.current = null;
-    }, 1_180);
-    onChange(nextRun);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function chooseQualifier(itemId: string) {
-    if (!isQualification || qualificationPick) {
-      return;
-    }
     closePlayer();
-    playSound("next");
-    setQualificationPick(itemId);
-    qualificationTimerRef.current = window.setTimeout(() => {
-      setQualificationPick(null);
-      qualificationTimerRef.current = null;
-      onChange(confirmRankedQualifier(run, itemId));
+    const nextRun = isQualification
+      ? confirmRankedQualifiers(run, qualificationSelection)
+      : confirmRankedOrder(run);
+    const transition = nextRun.state.status === "complete"
+      ? "result"
+      : nextRun.state.phase !== run.state.phase
+        ? "ranking"
+        : null;
+    if (transition) {
+      setStageTransition(transition);
+      actionTimerRef.current = window.setTimeout(() => {
+        actionTimerRef.current = null;
+        setStageTransition(null);
+        onChange(nextRun);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }, 2_000);
+      return;
+    }
+    setAdvancing(true);
+    actionTimerRef.current = window.setTimeout(() => {
+      actionTimerRef.current = null;
+      setAdvancing(false);
+      setQualificationSelection([]);
+      onChange(nextRun);
       window.scrollTo({ top: 0, behavior: "smooth" });
-    }, 260);
+    }, 280);
   }
 
   function undo() {
-    setMatchSummary(null);
+    if (advancing || stageTransition) {
+      return;
+    }
     playSound("undo");
-    onChange(undoRankedOrder(run));
+    const restored = undoRankedOrder(run);
+    if (restored.state.phase === "qualification") {
+      const before = new Set(restored.state.qualifiedIds);
+      setQualificationSelection(
+        run.state.qualifiedIds.filter((itemId) => !before.has(itemId)),
+      );
+    } else {
+      setQualificationSelection([]);
+    }
+    onChange(restored);
   }
 
   return (
@@ -175,13 +161,13 @@ export function RankedGameView({
       />
       <header className="ranked-game-header">
         <div>
-          <h2>{t(isQualification ? "Save one. Cut the rest." : "Put them in their place")}</h2>
+          <h2>{t(isQualification ? "Clear the noise." : "Put them in their place")}</h2>
         </div>
         <div className="ranked-game-meta">
           <span>{pack.name}</span>
           <strong className="ranked-action-progress">
             {isQualification
-              ? t("CUT {current} / {total}", {
+              ? t("BATCH {current} / {total}", {
                   current: Math.min(qualificationTotal, run.state.completedActions + 1),
                   total: qualificationTotal,
                 })
@@ -192,42 +178,29 @@ export function RankedGameView({
           <button
             type="button"
             className="ranked-undo"
-            disabled={Boolean(qualificationPick) || !run.state.undoStack.length}
+            disabled={advancing || Boolean(stageTransition) || !run.state.undoStack.length}
             onClick={undo}
           >
             ↶ {t("Undo")}
           </button>
-          <button type="button" className="ranked-cancel" onClick={onCancel}>
+          <button type="button" className="ranked-cancel" disabled={advancing || Boolean(stageTransition)} onClick={onCancel}>
             {t("Cancel run")}
           </button>
         </div>
       </header>
       <progress className="ranked-progress" max={100} value={progress} />
 
-      <div className={`ranked-workspace ${topOpen ? "top-open" : ""} ${activeGroupItem ? "has-active-player" : ""} ${isQualification ? "qualification" : "ranking"}`}>
-        <div className={`ranked-order-panel ${matchSummary ? "match-settling" : ""}`}>
+      <div className={`ranked-workspace ${topOpen ? "top-open" : ""} ${activeGroupItem ? "has-active-player" : ""} ${isQualification ? "qualification" : "ranking"} ${advancing ? "advancing" : ""}`}>
+        <div className="ranked-order-panel">
           <div className={`ranked-group-list group-size-${draftOrder.length}`}>
             {draftOrder.map((id, index) => {
               const item = itemMap.get(id);
-              const movement = matchSummary?.[index];
               if (!item) {
                 return null;
               }
               return (
                 <div className="ranked-choice-slot" key={id}>
-                  <span
-                    className={`ranked-match-shift ${movement ? "visible" : ""} ${movement && movement.delta > 0 ? "up" : movement && movement.delta < 0 ? "down" : "same"}`}
-                    aria-hidden="true"
-                  >
-                    {movement
-                      ? movement.delta > 0
-                        ? `↑${movement.delta}`
-                        : movement.delta < 0
-                          ? `↓${Math.abs(movement.delta)}`
-                          : "—"
-                      : ""}
-                  </span>
-                  <span className="ranked-place">{isQualification ? "?" : index + 1}</span>
+                  {!isQualification && <span className="ranked-place">{index + 1}</span>}
                   <article
                     ref={(element) => {
                       if (element) {
@@ -236,23 +209,8 @@ export function RankedGameView({
                         rowRefs.current.delete(id);
                       }
                     }}
-                    className={`ranked-choice-row ${player?.itemId === id ? "active" : ""} ${dragged?.source === "group" && dragged.itemId === id ? "dragging" : ""} ${qualificationPick === id ? "qualifier-picked" : ""} ${qualificationPick && qualificationPick !== id ? "qualifier-cut" : ""}`}
-                    role={isQualification ? "button" : undefined}
-                    tabIndex={isQualification ? 0 : undefined}
-                    onClick={(event) => {
-                      if (isQualification && !(event.target as HTMLElement).closest("button")) {
-                        chooseQualifier(id);
-                      }
-                    }}
-                    onKeyDown={(event) => {
-                      if (isQualification && (event.key === "Enter" || event.key === " ")) {
-                        event.preventDefault();
-                        chooseQualifier(id);
-                      }
-                    }}
-                    onPointerDown={isQualification
-                      ? undefined
-                      : (event) => beginPointerDrag(event, id, "group")}
+                    className={`ranked-choice-row ${player?.itemId === id ? "active" : ""} ${dragged?.source === "group" && dragged.itemId === id ? "dragging" : ""} ${qualificationSelection.includes(id) ? "qualifier-selected" : ""}`}
+                    onPointerDown={(event) => beginPointerDrag(event, id, "group")}
                   >
                     <RemoteImage
                       className="ranked-choice-art"
@@ -286,7 +244,23 @@ export function RankedGameView({
                       <small>{t(player?.itemId === id ? "STOP" : "PLAY")}</small>
                     </button>
                     {isQualification ? (
-                      <span className="ranked-keep-mark">{t("KEEP")}</span>
+                      <div className="ranked-qualifier-tools">
+                        <button
+                          type="button"
+                          className="ranked-keep-toggle"
+                          aria-pressed={qualificationSelection.includes(id)}
+                          aria-label={t("Keep {name}", { name: item.title })}
+                          onClick={() => setQualificationSelection((current) =>
+                            current.includes(id)
+                              ? current.filter((candidate) => candidate !== id)
+                              : [...current, id],
+                          )}
+                        >
+                          <span aria-hidden="true">✓</span>
+                          <small>{t("KEEP")}</small>
+                        </button>
+                        <span className="ranked-drag-handle" title={t("Drag to reorder")}>⠿</span>
+                      </div>
                     ) : (
                       <span className="ranked-drag-handle" title={t("Drag to reorder")}>⠿</span>
                     )}
@@ -296,16 +270,11 @@ export function RankedGameView({
             })}
           </div>
           <div className="ranked-order-controls">
-            {isQualification ? (
-              <div className="ranked-qualifier-prompt">
-                <span>✦</span>
-                <strong>{t("Tap one track to keep it")}</strong>
-              </div>
-            ) : (
-              <button type="button" className="ranked-confirm" onClick={confirm}>
-                <span>{t("NEXT")}</span>
-              </button>
-            )}
+            <button type="button" className="ranked-confirm" disabled={advancing || Boolean(stageTransition)} onClick={confirm}>
+              <span>{isQualification
+                ? t("NEXT · {selected} SAVED", { selected: qualificationSelection.length })
+                : t("NEXT")}</span>
+            </button>
           </div>
         </div>
 
@@ -367,9 +336,7 @@ export function RankedGameView({
                   <div
                     className={`ranked-live-row ${player?.itemId === entry.itemId ? "active" : ""} ${dragged?.source === "leader" && dragged.itemId === entry.itemId ? "dragging" : ""}`}
                     key={entry.itemId}
-                    onPointerDown={isQualification
-                      ? undefined
-                      : (event) => beginPointerDrag(event, entry.itemId, "leader")}
+                    onPointerDown={(event) => beginPointerDrag(event, entry.itemId, "leader")}
                   >
                     <span>{String(index + 1).padStart(2, "0")}</span>
                     <RemoteImage src={item.thumbnailUrl} alt="" draggable={false} />
@@ -382,6 +349,13 @@ export function RankedGameView({
           </div>
         </aside>
       </div>
+      {stageTransition && (
+        <div className={`ranked-stage-transition ${stageTransition}`} role="status">
+          <span>{t(stageTransition === "ranking" ? "STAGE 2" : "FINAL")}</span>
+          <strong>{t(stageTransition === "ranking" ? "THE REAL RANKING BEGINS" : "YOUR FINAL ORDER IS READY")}</strong>
+          <i aria-hidden="true" />
+        </div>
+      )}
     </section>
   );
 }

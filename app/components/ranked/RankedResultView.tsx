@@ -1,13 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Pack, RankedResult, RankedSessionState } from "../../../lib/types";
-import { moveRankedItem, setManualRankedOrder } from "../../domain/ranked";
+import { setManualRankedOrder } from "../../domain/ranked";
 import { useI18n } from "../../i18n/I18nContext";
 import { FlowBack } from "../shared/FlowBack";
 import { RemoteImage } from "../shared/RemoteImage";
 import { formatPoints } from "./RankedGameView";
 import { RankedMedia } from "./RankedMedia";
+import { RankedSoundControl } from "./RankedSoundControl";
+import { useRankedPlayer } from "./useRankedPlayer";
+import { useRankedResultOrder } from "./useRankedResultOrder";
+import { useRankedSounds } from "./useRankedSounds";
 
 export function RankedResultView({
   pack,
@@ -29,117 +33,177 @@ export function RankedResultView({
   onAdjust?: (state: RankedSessionState) => void;
 }) {
   const { t, language } = useI18n();
-  const [order, setOrder] = useState(() => state.manualRanking.map((entry) => entry.itemId));
-  const [playing, setPlaying] = useState<string | null>(null);
-  const [draggedId, setDraggedId] = useState<string | null>(null);
-  const itemMap = useMemo(() => new Map(pack.items.map((item) => [item.id, item])), [pack.items]);
+  const initialOrder = useMemo(
+    () => (state.manualRanking.length ? state.manualRanking : state.finalRanking)
+      .map((entry) => entry.itemId),
+    [state.finalRanking, state.manualRanking],
+  );
+  const [order, setOrder] = useState(initialOrder);
+  const { playSound, setVolume, unlockSound, volume } = useRankedSounds();
+  const {
+    closePlayer,
+    playInPlayer,
+    player,
+    playerRef,
+    receiving,
+  } = useRankedPlayer(playSound);
+  const autoPlayedRef = useRef(false);
+  const itemMap = useMemo(
+    () => new Map(pack.items.map((item) => [item.id, item])),
+    [pack.items],
+  );
   const points = useMemo(
     () => new Map(state.finalRanking.map((entry) => [entry.itemId, entry.points])),
     [state.finalRanking],
   );
 
+  useEffect(() => {
+    const first = initialOrder[0];
+    if (first && !autoPlayedRef.current) {
+      autoPlayedRef.current = true;
+      playInPlayer(first);
+    }
+  }, [initialOrder, playInPlayer]);
+
   function applyOrder(next: string[]) {
-    setOrder(next);
-    onAdjust?.(setManualRankedOrder(state, next));
+    const adjusted = setManualRankedOrder(state, next);
+    const accepted = adjusted === state
+      ? initialOrder
+      : adjusted.manualRanking.map((entry) => entry.itemId);
+    setOrder(accepted);
+    if (adjusted !== state) {
+      onAdjust?.(adjusted);
+    }
   }
 
-  function move(from: number, to: number) {
-    applyOrder(moveRankedItem(order, from, to));
-  }
-
-  const topThree = order.slice(0, 3);
+  const {
+    beginPointerDrag,
+    draftOrder,
+    draggedId,
+    playerDragActive,
+    rowRefs,
+  } = useRankedResultOrder({
+    canAdjust: Boolean(onAdjust) && !saving,
+    onCommit: applyOrder,
+    order,
+    playerRef,
+    playInPlayer,
+    playSound,
+    points,
+  });
+  const activeMedia = player ? itemMap.get(player.itemId) ?? null : null;
   const locale = language === "ru" ? "ru-RU" : language === "uk" ? "uk-UA" : "en-GB";
 
   return (
-    <section className="page-wrap ranked-result-view">
+    <section
+      className="ranked-result-screen"
+      onPointerDownCapture={unlockSound}
+    >
       <FlowBack label="Back" onClick={onBack} />
-      <div className="ranked-result-hero">
+      <RankedSoundControl
+        volume={volume}
+        onChange={setVolume}
+        onPreview={() => playSound("move")}
+      />
+      <header className="ranked-result-header">
         <div>
-          <div className="eyebrow"><span>●</span>{t("THE VERDICT IS IN")}</div>
-          <h2>{t("Your ranking just landed.")}</h2>
-          <p>{t("The algorithm built the order. Now drag anything you want to make it unmistakably yours.")}</p>
+          <span>{t("RANKING COMPLETE")}</span>
+          <h2>{t("Your final order")}</h2>
+        </div>
+        <div className="ranked-result-meta">
+          <strong>{pack.name}</strong>
           {completedAt && (
-            <small>{new Date(completedAt).toLocaleString(locale, { dateStyle: "long", timeStyle: "short" })}</small>
+            <small>{new Date(completedAt).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" })}</small>
           )}
-          <div className="result-actions">
-            {onAgain && <button className="button primary" onClick={onAgain}>{t("Run it back")}</button>}
-            {onDelete && <button className="button danger" onClick={onDelete}>{t("Delete history")}</button>}
+          {saving && <small className="ranked-saving">{t("Saving result…")}</small>}
+        </div>
+        <div className="result-actions">
+          {onAgain && <button className="button primary" onClick={onAgain}>{t("Run it back")}</button>}
+          {onDelete && <button className="button danger" onClick={onDelete}>{t("Delete history")}</button>}
+        </div>
+      </header>
+
+      <div className={`ranked-result-workspace ${activeMedia ? "has-active-player" : ""}`}>
+        <section className="ranked-final-panel">
+          <div className="ranked-final-head">
+            <div><span>{t("FINAL TOP")}</span><strong>{draftOrder.length}</strong></div>
+            <small>{t("Only equal scores can trade places")}</small>
           </div>
-          {saving && <span className="ranked-saving">{t("Saving result…")}</span>}
-        </div>
-        <div className="ranked-podium">
-          {topThree.map((id, index) => {
-            const item = itemMap.get(id);
-            return item ? (
-              <article key={id} className={`ranked-podium-card place-${index + 1}`}>
-                <span>{index + 1}</span>
-                <RemoteImage src={item.thumbnailUrl} alt="" />
-                <div><b>{item.title}</b><small>{item.channel}</small></div>
-                <strong>{formatPoints(points.get(id) ?? 0)} {t("PTS")}</strong>
-              </article>
-            ) : null;
-          })}
-        </div>
-      </div>
-
-      <div className="ranked-result-toolbar">
-        <div><span>{t("YOUR FINAL SAY")}</span><h3>{t("The final order")}</h3></div>
-        <button
-          type="button"
-          disabled={!onAdjust || saving}
-          onClick={() => applyOrder(state.finalRanking.map((entry) => entry.itemId))}
-        >{t("Reset to automatic")}</button>
-      </div>
-
-      <div className="ranked-final-list">
-        {order.map((id, index) => {
-          const item = itemMap.get(id);
-          if (!item) {
-            return null;
-          }
-          return (
-            <article
-              key={id}
-              className={`ranked-final-row ${index < 3 ? "podium" : ""} ${draggedId === id ? "dragging" : ""}`}
-              draggable={Boolean(onAdjust) && !saving}
-              onDragStart={(event) => {
-                setDraggedId(id);
-                event.dataTransfer.effectAllowed = "move";
-              }}
-              onDragEnd={() => setDraggedId(null)}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => {
-                event.preventDefault();
-                if (!draggedId || draggedId === id) {
-                  return;
-                }
-                const from = order.indexOf(draggedId);
-                if (from >= 0) {
-                  move(from, index);
-                }
-                setDraggedId(null);
-              }}
-            >
-              <span className="ranked-final-place">{String(index + 1).padStart(2, "0")}</span>
-              <RankedMedia
-                compact
-                item={item}
-                sourceType={pack.sourceType}
-                playing={playing === id}
-                onClose={() => setPlaying(playing === id ? null : id)}
-              />
-              <div className="ranked-final-copy"><b>{item.title}</b><small>{item.channel}</small></div>
-              <strong>{formatPoints(points.get(id) ?? 0)} <small>{t("PTS")}</small></strong>
-              {onAdjust && !saving && (
-                <div className="ranked-final-controls">
-                  <button disabled={index === 0} onClick={() => move(index, index - 1)} aria-label={t("Move up")}>↑</button>
-                  <span title={t("Drag to reorder")}>⠿</span>
-                  <button disabled={index === order.length - 1} onClick={() => move(index, index + 1)} aria-label={t("Move down")}>↓</button>
+          <div className="ranked-final-list">
+            {draftOrder.map((id, index) => {
+              const item = itemMap.get(id);
+              if (!item) {
+                return null;
+              }
+              const pointValue = points.get(id) ?? 0;
+              const tied = draftOrder.some(
+                (candidate, candidateIndex) =>
+                  candidateIndex !== index && points.get(candidate) === pointValue,
+              );
+              return (
+                <div className="ranked-final-slot" key={id}>
+                  <span className="ranked-final-place">{index + 1}</span>
+                  <article
+                    ref={(element) => {
+                      if (element) {
+                        rowRefs.current.set(id, element);
+                      } else {
+                        rowRefs.current.delete(id);
+                      }
+                    }}
+                    className={`ranked-final-row ${player?.itemId === id ? "active" : ""} ${draggedId === id ? "dragging" : ""}`}
+                    onPointerDown={(event) => beginPointerDrag(event, id)}
+                  >
+                    <RemoteImage
+                      className="ranked-choice-art"
+                      src={item.thumbnailUrl}
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                    />
+                    <div className="ranked-final-copy">
+                      <b>{item.title}</b>
+                      <small>{item.channel}{item.duration ? ` · ${item.duration}` : ""}</small>
+                    </div>
+                    <strong>{formatPoints(pointValue)} <small>{t("PTS")}</small></strong>
+                    <span
+                      className={`ranked-drag-handle ${tied ? "tie" : ""}`}
+                      title={t(tied ? "Drag to reorder or play" : "Drag to player")}
+                    >⠿</span>
+                  </article>
                 </div>
-              )}
-            </article>
-          );
-        })}
+              );
+            })}
+          </div>
+        </section>
+
+        <section
+          ref={playerRef}
+          className={`ranked-result-player ranked-player-dock ${activeMedia ? "has-track" : ""} ${playerDragActive ? "drag-active" : ""} ${receiving ? "receiving" : ""}`}
+        >
+          {activeMedia ? (
+            <RankedMedia
+              key={`${activeMedia.id}-${player?.loadKey}`}
+              item={activeMedia}
+              sourceType={pack.sourceType}
+              startSeconds={player?.startSeconds}
+              playing
+              onClose={closePlayer}
+              showControl={false}
+            />
+          ) : (
+            <div className="ranked-player-empty">
+              <span aria-hidden="true">▶</span>
+              <strong>{t("Drag a track here to listen")}</strong>
+            </div>
+          )}
+          {playerDragActive && (
+            <div className="ranked-player-drop-target">
+              <span aria-hidden="true">↓</span>
+              <strong>{t("Drop to play")}</strong>
+            </div>
+          )}
+        </section>
       </div>
     </section>
   );

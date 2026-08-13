@@ -14,7 +14,7 @@ import {
 export { rankedGroupCount } from "./rankedPairing";
 
 const FINALIST_LIMIT = 100;
-const FAST_QUALIFIER_SIZE = 6;
+const QUALIFICATION_GROUP_SIZE = 10;
 
 export function createRankedRun(
   pack: Pick<Pack, "id" | "items">,
@@ -43,6 +43,7 @@ export function createRankedRun(
     updatedAt: now,
     state: {
       phase,
+      qualificationStyle: "multi",
       round: 1,
       entries,
       currentGroup: groups[0] ?? [],
@@ -51,7 +52,7 @@ export function createRankedRun(
       pairKeys: [],
       completedActions: 0,
       qualifiedIds: qualificationGroups
-        ? qualificationGroups.byes
+        ? []
         : entries.map((entry) => entry.itemId),
       status: "active",
       totalActions: estimateRankedActions(entries.length),
@@ -76,10 +77,7 @@ export function estimateRankedActions(itemCount: number) {
 
 export function qualificationActionCount(itemCount: number) {
   return itemCount > FINALIST_LIMIT
-    ? Math.min(
-        FINALIST_LIMIT,
-        Math.ceil((itemCount - FINALIST_LIMIT) / (FAST_QUALIFIER_SIZE - 1)),
-      )
+    ? Math.ceil(itemCount / QUALIFICATION_GROUP_SIZE)
     : 0;
 }
 
@@ -129,7 +127,7 @@ export function confirmRankedOrder(run: RankedRun): RankedRun {
 
   const snapshot = rankedSnapshot(state);
   if (state.phase === "qualification") {
-    return confirmQualification(run, snapshot);
+    return confirmQualification(run, snapshot, []);
   }
   const entries = scoreGroup(state.entries, state.orderedGroup);
   const pairKeys = appendRankedPairKeys(state.pairKeys, state.currentGroup);
@@ -184,18 +182,15 @@ export function confirmRankedOrder(run: RankedRun): RankedRun {
   });
 }
 
-export function confirmRankedQualifier(run: RankedRun, itemId: string) {
+export function confirmRankedQualifiers(run: RankedRun, itemIds: string[]) {
+  const selectedIds = [...new Set(itemIds)];
   if (
     run.state.phase !== "qualification" ||
-    !run.state.currentGroup.includes(itemId)
+    selectedIds.some((itemId) => !run.state.currentGroup.includes(itemId))
   ) {
     return run;
   }
-  const orderedGroup = [
-    itemId,
-    ...run.state.currentGroup.filter((candidate) => candidate !== itemId),
-  ];
-  return confirmRankedOrder(setRankedGroupOrder(run, orderedGroup));
+  return confirmQualification(run, rankedSnapshot(run.state), selectedIds);
 }
 
 export function undoRankedOrder(run: RankedRun): RankedRun {
@@ -207,6 +202,10 @@ export function undoRankedOrder(run: RankedRun): RankedRun {
     ...run.state,
     ...cloneSnapshot(snapshot),
     status: "active",
+    totalActions:
+      snapshot.phase === "qualification"
+        ? estimateRankedActions(snapshot.entries.length)
+        : run.state.totalActions,
     targetRounds:
       snapshot.phase === "qualification"
         ? 1
@@ -230,6 +229,17 @@ export function setManualRankedOrder(
   const points = new Map(
     state.finalRanking.map((entry) => [entry.itemId, entry.points]),
   );
+  const currentOrder = state.manualRanking.length
+    ? state.manualRanking
+    : state.finalRanking;
+  if (
+    itemIds.some(
+      (itemId, index) =>
+        points.get(itemId) !== points.get(currentOrder[index]?.itemId),
+    )
+  ) {
+    return state;
+  }
   return {
     ...state,
     manualRanking: itemIds.map((itemId) => ({
@@ -265,12 +275,33 @@ function startFinalRanking(
     const previous = state.entries.find((entry) => entry.itemId === itemId)!;
     return { ...previous, points: 0, appearances: 0, firstPlaces: 0 };
   });
+  if (qualified.length < 2) {
+    const finalRanking = qualified.map(({ itemId, points }) => ({ itemId, points }));
+    return withRankedState(run, {
+      ...state,
+      phase: "ranking",
+      entries: qualified,
+      pairKeys,
+      completedActions,
+      qualifiedIds,
+      currentGroup: [],
+      orderedGroup: [],
+      pendingGroups: [],
+      status: "complete",
+      totalActions: completedActions,
+      targetRounds: 0,
+      finalRanking,
+      manualRanking: finalRanking.map((entry) => ({ ...entry })),
+      undoStack: [snapshot],
+    });
+  }
+  const targetRounds = rankedRoundCount(qualified.length);
   const groups = buildRankedRound(qualified, pairKeys, 1, "ranking");
   return withRankedState(run, {
     ...state,
     phase: "ranking",
     round: 1,
-    targetRounds: rankedRoundCount(qualified.length),
+    targetRounds,
     entries: qualified,
     pairKeys,
     completedActions,
@@ -278,14 +309,19 @@ function startFinalRanking(
     currentGroup: groups[0] ?? [],
     orderedGroup: groups[0] ?? [],
     pendingGroups: groups.slice(1),
+    totalActions:
+      completedActions + rankedGroupCount(qualified.length) * targetRounds,
     undoStack: [snapshot],
   });
 }
 
-function confirmQualification(run: RankedRun, snapshot: RankedSnapshot) {
+function confirmQualification(
+  run: RankedRun,
+  snapshot: RankedSnapshot,
+  selectedIds: string[],
+) {
   const state = run.state;
-  const selectedId = state.orderedGroup[0];
-  const qualifiedIds = [...state.qualifiedIds, selectedId];
+  const qualifiedIds = [...state.qualifiedIds, ...selectedIds];
   const completedActions = state.completedActions + 1;
   if (state.pendingGroups.length > 0) {
     const [currentGroup, ...pendingGroups] = state.pendingGroups;
@@ -311,17 +347,14 @@ function confirmQualification(run: RankedRun, snapshot: RankedSnapshot) {
 
 function buildFastQualification(entries: RankedEntry[]) {
   const pool = [...entries].sort((left, right) => left.seed - right.seed);
-  const actionCount = qualificationActionCount(entries.length);
-  const groupedItemCount = entries.length - (FINALIST_LIMIT - actionCount);
-  const baseSize = Math.floor(groupedItemCount / actionCount);
-  const largerGroups = groupedItemCount % actionCount;
   const groups: string[][] = [];
-  for (let index = 0; index < actionCount; index += 1) {
-    const size = baseSize + (index < largerGroups ? 1 : 0);
-    const group = pool.splice(0, size).map((entry) => entry.itemId);
+  while (pool.length) {
+    const group = pool
+      .splice(0, QUALIFICATION_GROUP_SIZE)
+      .map((entry) => entry.itemId);
     groups.push(group);
   }
-  return { byes: pool.map((entry) => entry.itemId), groups };
+  return { groups };
 }
 
 function scoreGroup(entries: RankedEntry[], orderedGroup: string[]) {
@@ -345,6 +378,7 @@ function scoreGroup(entries: RankedEntry[], orderedGroup: string[]) {
 function rankedSnapshot(state: RankedSessionState): RankedSnapshot {
   return cloneSnapshot({
     phase: state.phase,
+    qualificationStyle: state.qualificationStyle,
     round: state.round,
     entries: state.entries,
     currentGroup: state.currentGroup,

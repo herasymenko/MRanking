@@ -45,9 +45,10 @@ function seededRandom(seed = 17) {
   };
 }
 
-function finish(run) {
+function finishRanking(run) {
   let current = run;
   while (current.state.status === "active") {
+    assert.equal(current.state.phase, "ranking");
     current = ranked.confirmRankedOrder(current);
   }
   return current;
@@ -58,7 +59,7 @@ test("small packs receive a complete ranked result", () => {
   assert.equal(run.state.phase, "ranking");
   assert.equal(run.state.totalActions, 20);
 
-  const complete = finish(run);
+  const complete = finishRanking(run);
   assert.equal(complete.state.status, "complete");
   assert.equal(complete.state.completedActions, 20);
   assert.equal(complete.state.finalRanking.length, 16);
@@ -66,74 +67,95 @@ test("small packs receive a complete ranked result", () => {
   assert.ok(complete.state.entries.every((entry) => entry.appearances === 5));
 });
 
-test("large packs qualify exactly 100 finalists before ranking", () => {
+test("large packs are reviewed once in batches of ten and keep every selection", () => {
   let run = ranked.createRankedRun(pack(128), seededRandom(91));
   const reviewed = new Set();
+  let batches = 0;
+  let expectedSurvivors = 0;
   assert.equal(run.state.phase, "qualification");
-  assert.equal(run.state.targetRounds, 1);
-  assert.equal(run.state.qualifiedIds.length, 94);
-  assert.equal(run.state.totalActions, 156);
+  assert.equal(run.state.qualificationStyle, "multi");
+  assert.equal(run.state.qualifiedIds.length, 0);
+  assert.equal(ranked.qualificationActionCount(128), 13);
 
   while (run.state.phase === "qualification") {
+    assert.ok(run.state.currentGroup.length >= 1);
+    assert.ok(run.state.currentGroup.length <= 10);
     for (const id of run.state.currentGroup) {
       assert.equal(reviewed.has(id), false);
       reviewed.add(id);
     }
-    assert.ok(run.state.currentGroup.length >= 5);
-    assert.ok(run.state.currentGroup.length <= 6);
-    run = ranked.confirmRankedQualifier(
-      run,
-      run.state.currentGroup.at(-1),
-    );
+    const selected = batches === 0 ? [] : run.state.currentGroup.slice(0, 5);
+    expectedSurvivors += selected.length;
+    run = ranked.confirmRankedQualifiers(run, selected);
+    batches += 1;
   }
-  assert.equal(run.state.phase, "ranking");
-  assert.equal(run.state.qualifiedIds.length, 100);
-  assert.equal(run.state.entries.length, 100);
-  assert.ok(run.state.entries.every((entry) => entry.appearances === 0));
-  assert.equal(reviewed.size, 34);
-  assert.equal(run.state.completedActions, 6);
 
-  const complete = finish(run);
-  assert.equal(complete.state.finalRanking.length, 100);
+  assert.equal(batches, 13);
+  assert.equal(reviewed.size, 128);
+  assert.equal(run.state.qualifiedIds.length, expectedSurvivors);
+  assert.equal(run.state.entries.length, expectedSurvivors);
+  assert.ok(run.state.entries.every((entry) => entry.appearances === 0));
+  assert.equal(run.state.completedActions, 13);
+
+  const complete = finishRanking(run);
+  assert.equal(complete.state.finalRanking.length, expectedSurvivors);
   assert.equal(complete.state.completedActions, complete.state.totalActions);
 });
 
-test("fast qualification scales to the largest supported pack", () => {
+test("qualification scales to the largest supported pack", () => {
   let run = ranked.createRankedRun(pack(512), seededRandom(13));
   let actions = 0;
   while (run.state.phase === "qualification") {
-    assert.ok(run.state.currentGroup.length >= 5);
-    assert.ok(run.state.currentGroup.length <= 6);
-    run = ranked.confirmRankedQualifier(run, run.state.currentGroup[0]);
+    run = ranked.confirmRankedQualifiers(run, run.state.currentGroup.slice(0, 2));
     actions += 1;
   }
-  assert.equal(actions, 83);
-  assert.equal(run.state.qualifiedIds.length, 100);
-  assert.equal(run.state.entries.length, 100);
+  assert.equal(actions, 52);
+  assert.equal(run.state.qualifiedIds.length, 104);
+  assert.equal(run.state.entries.length, 104);
 });
 
-test("undo restores the previous group and scores", () => {
-  const run = ranked.createRankedRun(pack(32), seededRandom(5));
+test("qualification may eliminate every item", () => {
+  let run = ranked.createRankedRun(pack(101), seededRandom(3));
+  while (run.state.status === "active") {
+    run = ranked.confirmRankedQualifiers(run, []);
+  }
+  assert.equal(run.state.status, "complete");
+  assert.deepEqual(run.state.finalRanking, []);
+});
+
+test("undo restores a qualification batch and its previous survivors", () => {
+  const run = ranked.createRankedRun(pack(128), seededRandom(5));
   const group = [...run.state.currentGroup];
-  const scored = ranked.confirmRankedOrder(run);
-  assert.equal(scored.state.completedActions, 1);
-  const restored = ranked.undoRankedOrder(scored);
+  const selected = group.slice(0, 4);
+  const advanced = ranked.confirmRankedQualifiers(run, selected);
+  const restored = ranked.undoRankedOrder(advanced);
   assert.deepEqual(restored.state.currentGroup, group);
+  assert.deepEqual(restored.state.qualifiedIds, []);
   assert.equal(restored.state.completedActions, 0);
-  assert.ok(restored.state.entries.every((entry) => entry.points === 0));
 });
 
-test("manual result ordering preserves automatic scores", () => {
-  const complete = finish(ranked.createRankedRun(pack(16), seededRandom(7)));
-  const reversedIds = complete.state.finalRanking
-    .map((entry) => entry.itemId)
-    .reverse();
-  const adjusted = ranked.setManualRankedOrder(complete.state, reversedIds);
-  assert.deepEqual(
-    adjusted.manualRanking.map((entry) => entry.itemId),
-    reversedIds,
+test("manual result ordering only permits equal-score positions", () => {
+  const complete = finishRanking(ranked.createRankedRun(pack(16), seededRandom(7)));
+  const placements = complete.state.finalRanking.map((entry) => ({ ...entry }));
+  placements[1].points = placements[0].points;
+  const state = {
+    ...complete.state,
+    finalRanking: placements,
+    manualRanking: placements.map((entry) => ({ ...entry })),
+  };
+  const ids = placements.map((entry) => entry.itemId);
+  const equalSwap = [ids[1], ids[0], ...ids.slice(2)];
+  const adjusted = ranked.setManualRankedOrder(state, equalSwap);
+  assert.deepEqual(adjusted.manualRanking.map((entry) => entry.itemId), equalSwap);
+
+  const differentIndex = placements.findIndex(
+    (entry, index) => index > 1 && entry.points !== placements[0].points,
   );
-  assert.deepEqual(adjusted.finalRanking, complete.state.finalRanking);
+  assert.ok(differentIndex > 1);
+  const invalid = [...equalSwap];
+  [invalid[0], invalid[differentIndex]] = [invalid[differentIndex], invalid[0]];
+  assert.equal(ranked.setManualRankedOrder(adjusted, invalid), adjusted);
+  assert.deepEqual(adjusted.finalRanking, placements);
 });
 
 test("group ordering only accepts the current participants", () => {

@@ -206,6 +206,7 @@ export type RankedPlacement = {
 
 export type RankedSnapshot = {
   phase: RankedPhase;
+  qualificationStyle?: "multi";
   round: number;
   entries: RankedEntry[];
   currentGroup: string[];

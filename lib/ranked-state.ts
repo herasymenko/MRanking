@@ -80,11 +80,16 @@ export function rankedStateMatchesPack(
     return false;
   }
   if (state.phase === "qualification") {
-    return state.entries.length === membership.size;
+    return (
+      state.qualificationStyle === "multi" &&
+      state.entries.length === membership.size
+    );
   }
-  return membership.size <= 100
-    ? state.entries.length === membership.size
-    : state.entries.length === 100;
+  const entryIds = state.entries.map((entry) => entry.itemId);
+  return (
+    entryIds.length === state.qualifiedIds.length &&
+    sameSet(entryIds, state.qualifiedIds)
+  );
 }
 
 function sanitizeSnapshot(value: JsonValue | undefined): RankedSnapshot | null {
@@ -92,14 +97,17 @@ function sanitizeSnapshot(value: JsonValue | undefined): RankedSnapshot | null {
     return null;
   }
   const phase = value.phase;
+  const qualificationStyle = value.qualificationStyle === "multi"
+    ? "multi"
+    : undefined;
   const round = safeInteger(value.round, 1, 20);
   const entries = sanitizeEntries(value.entries);
-  const currentGroup = stringArray(value.currentGroup, 8);
-  const orderedGroup = stringArray(value.orderedGroup, 8);
-  const pendingGroups = nestedStringArray(value.pendingGroups, 10_000, 8);
+  const currentGroup = stringArray(value.currentGroup, 10);
+  const orderedGroup = stringArray(value.orderedGroup, 10);
+  const pendingGroups = nestedStringArray(value.pendingGroups, 10_000, 10);
   const pairKeys = stringArray(value.pairKeys, 100_000, 1024);
   const completedActions = safeInteger(value.completedActions, 0, 100_000);
-  const qualifiedIds = stringArray(value.qualifiedIds, 100);
+  const qualifiedIds = stringArray(value.qualifiedIds, 2_000);
   if (
     (phase !== "qualification" && phase !== "ranking") ||
     round === null ||
@@ -117,14 +125,16 @@ function sanitizeSnapshot(value: JsonValue | undefined): RankedSnapshot | null {
   if (
     !currentGroup.every((id) => ids.has(id)) ||
     !sameSet(currentGroup, orderedGroup) ||
-    !pendingGroups.every(
-      (group) => group.length >= 2 && group.every((id) => ids.has(id)),
+    !pendingGroups.every((group) =>
+      group.length >= (phase === "qualification" ? 1 : 2) &&
+      group.every((id) => ids.has(id)),
     )
   ) {
     return null;
   }
   return {
     phase,
+    qualificationStyle,
     round,
     entries,
     currentGroup,
@@ -137,7 +147,7 @@ function sanitizeSnapshot(value: JsonValue | undefined): RankedSnapshot | null {
 }
 
 function sanitizeEntries(value: JsonValue | undefined): RankedEntry[] | null {
-  if (!Array.isArray(value) || value.length < 2 || value.length > 2_000) {
+  if (!Array.isArray(value) || value.length > 2_000) {
     return null;
   }
   const ids = new Set<string>();
@@ -168,7 +178,7 @@ function sanitizeEntries(value: JsonValue | undefined): RankedEntry[] | null {
 }
 
 function sanitizePlacements(value: JsonValue | undefined): RankedPlacement[] | null {
-  if (!Array.isArray(value) || value.length > 100) {
+  if (!Array.isArray(value) || value.length > 2_000) {
     return null;
   }
   const ids = new Set<string>();

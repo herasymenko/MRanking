@@ -158,7 +158,8 @@ export function useRankedRun({
   function startPack(pack: Pack, resume = false) {
     const saved = runs[pack.id];
     const legacyQualification =
-      saved?.state.phase === "qualification" && saved.state.targetRounds !== 1;
+      saved?.state.phase === "qualification" &&
+      saved.state.qualificationStyle !== "multi";
     const run = resume && saved && !legacyQualification
       ? structuredClone(saved)
       : createRankedRun(pack);

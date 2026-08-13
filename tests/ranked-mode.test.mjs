@@ -8,6 +8,7 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     app,
     game,
     pointerOrder,
+    resultOrder,
     playerHook,
     soundHook,
     soundControl,
@@ -25,6 +26,7 @@ test("ranked mode is wired through UI, persistence and localization", async () =
     read("../app/components/MRankingApp.tsx"),
     read("../app/components/ranked/RankedGameView.tsx"),
     read("../app/components/ranked/useRankedPointerOrder.ts"),
+    read("../app/components/ranked/useRankedResultOrder.ts"),
     read("../app/components/ranked/useRankedPlayer.ts"),
     read("../app/components/ranked/useRankedSounds.ts"),
     read("../app/components/ranked/RankedSoundControl.tsx"),
@@ -84,13 +86,17 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(game, /className="ranked-choice-slot"/);
   assert.match(game, /ranked-choice-art/);
   assert.doesNotMatch(game, /PREVIEW ALL 4|STOP PREVIEW|useRankedPreviewQueue/);
-  assert.match(game, /confirmRankedQualifier/);
-  assert.match(game, /Save one\. Cut the rest\./);
-  assert.match(game, /Tap one track to keep it/);
+  assert.match(game, /confirmRankedQualifiers/);
+  assert.match(game, /Clear the noise\./);
+  assert.match(game, /NEXT · \{selected\} SAVED/);
+  assert.match(game, /qualificationSelection/);
+  assert.match(game, /ranked-keep-toggle/);
+  assert.match(game, /2_000/);
+  assert.match(game, /ranked-stage-transition/);
   assert.match(game, /playSound\("next"\)/);
   assert.match(game, /playSound\("undo"\)/);
   assert.match(game, /playSound\("top"\)/);
-  assert.match(game, /ranked-match-shift/);
+  assert.doesNotMatch(game, /ranked-match-shift/);
   assert.match(game, /"STOP"/);
   assert.doesNotMatch(game, /"IN PLAYER"/);
   assert.doesNotMatch(game, /"PAUSE"|"Pause track"/);
@@ -106,7 +112,14 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(game, /Your top right now/);
   assert.match(game, /confirmRankedOrder/);
   assert.match(result, /setManualRankedOrder/);
-  assert.match(result, /Reset to automatic/);
+  assert.match(result, /useRankedResultOrder/);
+  assert.match(result, /showControl=\{false\}/);
+  assert.match(result, /playInPlayer\(first\)/);
+  assert.doesNotMatch(result, /Reset to automatic|Move up|Move down|ranked-card-play/);
+  assert.match(resultOrder, /points\.get\(id\) === draggedPoints/);
+  assert.match(resultOrder, /animateRankedPreviewOpen/);
+  assert.match(resultOrder, /playSound\("move"\)/);
+  assert.match(resultOrder, /playSound\("drop"\)/);
   assert.match(runsApi, /INSERT INTO ranked_runs/);
   assert.match(resultsApi, /INSERT INTO ranked_results/);
   assert.match(resultsApi, /UPDATE ranked_results SET state_json/);
@@ -137,8 +150,10 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(styles, /ranked-choice-art/);
   assert.match(styles, /ranked-active-glow/);
   assert.match(styles, /has-active-player/);
-  assert.match(styles, /ranked-match-shift/);
-  assert.match(styles, /ranked-qualifier-prompt/);
+  assert.doesNotMatch(styles, /ranked-match-shift|ranked-qualifier-prompt/);
+  assert.match(styles, /ranked-keep-toggle/);
+  assert.match(styles, /ranked-stage-transition/);
+  assert.match(styles, /ranked-result-workspace/);
   assert.match(styles, /@media \(hover: none\), \(pointer: coarse\)/);
   assert.match(pointerOrder, /event\.pointerType !== "mouse" && !fromHandle/);
   assert.match(pointerOrder, /draggedBottom >= session\.targetMidpoints/);
