@@ -12,8 +12,10 @@ import { useI18n } from "../../i18n/I18nContext";
 import { FlowBack } from "../shared/FlowBack";
 import { RemoteImage } from "../shared/RemoteImage";
 import { RankedMedia } from "./RankedMedia";
+import { RankedSoundControl } from "./RankedSoundControl";
 import { useRankedPlayer } from "./useRankedPlayer";
 import { useRankedPointerOrder } from "./useRankedPointerOrder";
+import { useRankedSounds } from "./useRankedSounds";
 
 export function RankedGameView({
   pack,
@@ -30,6 +32,7 @@ export function RankedGameView({
 }) {
   const { t } = useI18n();
   const [topOpen, setTopOpen] = useState(false);
+  const { playSound, setVolume, unlockSound, volume } = useRankedSounds();
   const {
     closePlayer,
     playInPlayer,
@@ -37,14 +40,20 @@ export function RankedGameView({
     playerRef,
     receiving,
     toggleFromTile,
-  } = useRankedPlayer();
+  } = useRankedPlayer(playSound);
   const {
     beginPointerDrag,
     draftOrder,
     dragged,
     playerDragActive,
     rowRefs,
-  } = useRankedPointerOrder({ run, onChange, playerRef, playInPlayer });
+  } = useRankedPointerOrder({
+    run,
+    onChange,
+    playerRef,
+    playInPlayer,
+    playSound,
+  });
   const itemMap = useMemo(
     () => new Map(pack.items.map((item) => [item.id, item])),
     [pack.items],
@@ -69,8 +78,16 @@ export function RankedGameView({
   }
 
   return (
-    <section className="ranked-game-view">
+    <section
+      className="ranked-game-view"
+      onPointerDownCapture={unlockSound}
+    >
       <FlowBack label="Back" onClick={onBack} />
+      <RankedSoundControl
+        volume={volume}
+        onChange={setVolume}
+        onPreview={() => playSound("move")}
+      />
       <header className="ranked-game-header">
         <div>
           <h2>{t("Put them in their place")}</h2>

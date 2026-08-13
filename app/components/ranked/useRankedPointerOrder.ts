@@ -5,6 +5,7 @@ import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import type { RankedRun } from "../../../lib/types";
 import { moveRankedItem, setRankedGroupOrder } from "../../domain/ranked";
 import { animateRankedPreviewOpen } from "./useRankedPlayer";
+import type { PlayRankedSound } from "./useRankedSounds";
 
 type DragSource = "group" | "leader";
 type PointerDrag = {
@@ -27,11 +28,13 @@ export function useRankedPointerOrder({
   onChange,
   playerRef,
   playInPlayer,
+  playSound,
 }: {
   run: RankedRun;
   onChange: (run: RankedRun) => void;
   playerRef: RefObject<HTMLElement | null>;
   playInPlayer: (itemId: string) => void;
+  playSound: PlayRankedSound;
 }) {
   const [dragged, setDragged] = useState<{
     itemId: string;
@@ -225,6 +228,7 @@ export function useRankedPointerOrder({
         if (preview) {
           animateRankedPreviewOpen(preview, playerBounds);
         }
+        playSound("drop");
         playInPlayer(itemId);
         if (source === "group") {
           restoreOriginalOrder();
@@ -256,6 +260,7 @@ export function useRankedPointerOrder({
       }
       session.targetIndex = targetIndex;
       if (targetIndex !== fromIndex) {
+        playSound("move");
         flipAnimations.current.forEach((animation) => animation.cancel());
         flipAnimations.current.clear();
         previousRowRects.current = captureRowRects(rowRefs.current);
