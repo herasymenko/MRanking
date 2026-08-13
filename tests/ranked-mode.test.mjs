@@ -30,6 +30,7 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(app, /<RankedAppSection/);
   assert.match(app, /useRankedRun/);
   assert.match(game, /draggable/);
+  assert.match(game, /draggable=\{playing !== id\}/);
   assert.match(game, /Your top right now/);
   assert.match(game, /confirmRankedOrder/);
   assert.match(result, /setManualRankedOrder/);
@@ -42,6 +43,8 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(translations, /"Ranking complete"/);
   assert.match(translations, /Рейтинг готов/);
   assert.match(styles, /@media \(max-width: 640px\)/);
+  assert.match(styles, /ranked-media\.playing/);
+  assert.match(styles, /aspect-ratio: 16 \/ 9/);
 });
 
 function read(path) {

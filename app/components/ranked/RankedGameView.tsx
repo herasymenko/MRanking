@@ -96,9 +96,13 @@ export function RankedGameView({
               return (
                 <article
                   key={id}
-                  className={`ranked-choice-row ${draggedId === id ? "dragging" : ""}`}
-                  draggable
+                  className={`ranked-choice-row ${playing === id ? "playing" : ""} ${draggedId === id ? "dragging" : ""}`}
+                  draggable={playing !== id}
                   onDragStart={(event) => {
+                    if (playing === id) {
+                      event.preventDefault();
+                      return;
+                    }
                     setDraggedId(id);
                     event.dataTransfer.effectAllowed = "move";
                     event.dataTransfer.setData("text/plain", id);

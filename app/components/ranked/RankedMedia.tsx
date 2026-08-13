@@ -20,7 +20,10 @@ export function RankedMedia({
 }) {
   const { t } = useI18n();
   return (
-    <div className={`ranked-media ${compact ? "compact" : ""}`}>
+    <div
+      className={`ranked-media ${playing ? "playing" : ""} ${compact ? "compact" : ""}`}
+      data-source={sourceType}
+    >
       {playing ? (
         <iframe
           src={mediaEmbedUrl(sourceType, item)}
