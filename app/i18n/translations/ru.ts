@@ -1,4 +1,7 @@
+import { RANKED_TRANSLATIONS } from "./ranked";
+
 export const RU_TRANSLATIONS: Record<string, string> = {
+    ...RANKED_TRANSLATIONS.ru,
     "Upload pack": "Загрузить пак",
     Packs: "Паки",
     Modes: "Режимы",

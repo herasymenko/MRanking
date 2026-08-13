@@ -1,6 +1,13 @@
 import type { PackItem, PlaylistImportIssue, SourceType } from "../lib/types";
 
-export type View = "home" | "upload" | "packs" | "modes" | "hill" | "wheel";
+export type View =
+  | "home"
+  | "upload"
+  | "packs"
+  | "modes"
+  | "hill"
+  | "wheel"
+  | "ranked";
 
 export type EditablePack = {
   id?: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Pack, SavedResult, WheelResult } from "../../lib/types";
+import type { Pack, RankedResult, SavedResult, WheelResult } from "../../lib/types";
 import { exportPack, packToEditable } from "../domain/pack";
 import { I18nContext, translate } from "../i18n/I18nContext";
 import { usePreferencesStore } from "../state/preferences";
@@ -10,12 +10,14 @@ import { LoginModal } from "./auth/LoginModal";
 import { HomeView } from "./home/HomeView";
 import { usePrivateLibrary } from "./hooks/usePrivateLibrary";
 import { useTournamentRun } from "./hooks/useTournamentRun";
+import { useRankedRun } from "./hooks/useRankedRun";
 import { useWheelRun } from "./hooks/useWheelRun";
 import { Header, LogoMark } from "./layout/Header";
 import { ModeView } from "./modes/ModeView";
 import { PackLibraryView } from "./packs/PackLibraryView";
 import { UploadView } from "./packs/UploadView";
 import { TournamentFlow } from "./tournament/TournamentFlow";
+import { RankedAppSection } from "./ranked/RankedAppSection";
 import { WheelFlow } from "./wheel/WheelFlow";
 
 export function MRankingApp() {
@@ -24,6 +26,7 @@ export function MRankingApp() {
   const [view, setView] = useState<View>("home");
   const [viewedResult, setViewedResult] = useState<SavedResult | null>(null);
   const [viewedWheelResult, setViewedWheelResult] = useState<WheelResult | null>(null);
+  const [viewedRankedResult, setViewedRankedResult] = useState<RankedResult | null>(null);
   const [editable, setEditable] = useState<EditablePack | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -51,6 +54,11 @@ export function MRankingApp() {
     t,
   });
   const wheel = useWheelRun({
+    user: library.user,
+    onToast: setToast,
+    t,
+  });
+  const ranked = useRankedRun({
     user: library.user,
     onToast: setToast,
     t,
@@ -105,7 +113,9 @@ export function MRankingApp() {
     }
     setViewedResult(null);
     setViewedWheelResult(null);
+    setViewedRankedResult(null);
     wheel.leaveRun();
+    ranked.leaveRun();
     setView(next);
     scrollToPageTop();
   }
@@ -125,7 +135,9 @@ export function MRankingApp() {
     setActiveRun(null);
     setViewedResult(null);
     setViewedWheelResult(null);
+    setViewedRankedResult(null);
     wheel.clear();
+    ranked.clear();
     setEditable(null);
     setProfileOpen(false);
     setView("home");
@@ -136,6 +148,7 @@ export function MRankingApp() {
     setEditable(null);
     setViewedResult(null);
     setViewedWheelResult(null);
+    setViewedRankedResult(null);
     setView("packs");
     scrollToPageTop();
   }
@@ -155,7 +168,9 @@ export function MRankingApp() {
     setEditable(null);
     setViewedResult(null);
     setViewedWheelResult(null);
+    setViewedRankedResult(null);
     wheel.leaveRun();
+    ranked.leaveRun();
     setLoginOpen(false);
     setProfileOpen(false);
     setLanguageOpen(false);
@@ -165,6 +180,7 @@ export function MRankingApp() {
 
   function startTournament(pack: Pack, resume = false): void {
     wheel.leaveRun();
+    ranked.leaveRun();
     setViewedWheelResult(null);
     setViewedResult(null);
     startRun(pack, resume);
@@ -177,9 +193,18 @@ export function MRankingApp() {
     setViewedWheelResult(null);
     setActiveRun(null);
     setModePack(null);
+    ranked.leaveRun();
     wheel.startPack(pack, resume);
     setView("wheel");
     scrollToPageTop();
+  }
+
+  function startRanked(pack: Pack, resume = false): void {
+    setViewedResult(null); setViewedWheelResult(null); setViewedRankedResult(null);
+    setActiveRun(null); setModePack(null);
+    wheel.leaveRun();
+    ranked.startPack(pack, resume);
+    setView("ranked"); scrollToPageTop();
   }
 
   if (booting) {
@@ -275,25 +300,24 @@ export function MRankingApp() {
             }}
             onKing={() => {
               if (tournamentPack) {
-                startTournament(tournamentPack);
-                return;
+                startTournament(tournamentPack); return;
               }
-              setActiveRun(null);
-              setModePack(null);
-              setView("hill");
+              setActiveRun(null); setModePack(null); setView("hill");
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
             onOpenWheel={() => {
               if (tournamentPack) {
-                startWheel(tournamentPack, Boolean(wheel.runs[tournamentPack.id]));
-                return;
+                startWheel(tournamentPack, Boolean(wheel.runs[tournamentPack.id])); return;
               }
-              setActiveRun(null);
-              setModePack(null);
-              wheel.leaveRun();
-              setViewedWheelResult(null);
-              setView("wheel");
-              scrollToPageTop();
+              setActiveRun(null); setModePack(null); wheel.leaveRun();
+              setViewedWheelResult(null); setView("wheel"); scrollToPageTop();
+            }}
+            onOpenRanked={() => {
+              if (tournamentPack) {
+                startRanked(tournamentPack, Boolean(ranked.runs[tournamentPack.id])); return;
+              }
+              setActiveRun(null); setModePack(null); wheel.leaveRun(); ranked.leaveRun();
+              setViewedRankedResult(null); setView("ranked"); scrollToPageTop();
             }}
           />
         )}
@@ -351,6 +375,15 @@ export function MRankingApp() {
             }}
             onCancel={(pack) => void wheel.cancelRun(pack)}
             onDeleteResult={(result) => void wheel.deleteResult(result)}
+          />
+        )}
+        {view === "ranked" && user && (
+          <RankedAppSection
+            packs={packs} ranked={ranked} viewedResult={viewedRankedResult}
+            onViewedResult={setViewedRankedResult} onStart={startRanked}
+            onBackToModes={() => setView("modes")}
+            onUpload={() => { setEditable(null); protectedNavigate("upload"); }}
+            onScrollTop={scrollToPageTop}
           />
         )}
         <footer>

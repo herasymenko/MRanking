@@ -188,3 +188,55 @@ export type WheelSettings = {
   soundEnabled: boolean;
   volume: number;
 };
+
+export type RankedPhase = "qualification" | "ranking";
+
+export type RankedEntry = {
+  itemId: string;
+  points: number;
+  appearances: number;
+  firstPlaces: number;
+  seed: number;
+};
+
+export type RankedPlacement = {
+  itemId: string;
+  points: number;
+};
+
+export type RankedSnapshot = {
+  phase: RankedPhase;
+  round: number;
+  entries: RankedEntry[];
+  currentGroup: string[];
+  orderedGroup: string[];
+  pendingGroups: string[][];
+  pairKeys: string[];
+  completedActions: number;
+  qualifiedIds: string[];
+};
+
+export type RankedSessionState = RankedSnapshot & {
+  status: "active" | "complete";
+  totalActions: number;
+  targetRounds: number;
+  finalRanking: RankedPlacement[];
+  manualRanking: RankedPlacement[];
+  undoStack: RankedSnapshot[];
+  updatedAt: string;
+};
+
+export type RankedRun = {
+  id: string;
+  packId: string;
+  state: RankedSessionState;
+  updatedAt: string;
+};
+
+export type RankedResult = {
+  id: string;
+  packId: string;
+  state: RankedSessionState;
+  pack: Pack;
+  completedAt: string;
+};

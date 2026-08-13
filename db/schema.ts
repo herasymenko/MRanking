@@ -111,3 +111,28 @@ export const wheelResults = sqliteTable(
     index("wheel_results_user_id_idx").on(table.userId, table.completedAt),
   ],
 );
+
+export const rankedRuns = sqliteTable("ranked_runs", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  packId: text("pack_id").notNull().references(() => packs.id),
+  stateJson: text("state_json").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (table) => [
+  uniqueIndex("ranked_runs_user_pack_idx").on(table.userId, table.packId),
+]);
+
+export const rankedResults = sqliteTable(
+  "ranked_results",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => users.id),
+    packId: text("pack_id").notNull().references(() => packs.id),
+    stateJson: text("state_json").notNull(),
+    packJson: text("pack_json").notNull(),
+    completedAt: text("completed_at").notNull(),
+  },
+  (table) => [
+    index("ranked_results_user_id_idx").on(table.userId, table.completedAt),
+  ],
+);

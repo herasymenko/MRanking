@@ -10,7 +10,7 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "test": "vinext build && tsc --noEmit && node --test tests/rendered-html.test.mjs tests/wheel-and-localization.test.mjs tests/wheel-domain.test.mjs tests/apple-music-importer.test.mjs tests/pack-import-domain.test.mjs",
+    "test": "vinext build && tsc --noEmit && node --test tests/rendered-html.test.mjs tests/wheel-and-localization.test.mjs tests/wheel-domain.test.mjs tests/apple-music-importer.test.mjs tests/pack-import-domain.test.mjs tests/ranked-domain.test.mjs tests/ranked-mode.test.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern \"Themes inputs\"",
     "db:generate": "drizzle-kit generate"

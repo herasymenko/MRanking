@@ -93,12 +93,13 @@ test("ships the redesigned application shell", async () => {
 test("client includes the private playlist-to-tournament flow", async () => {
   const source = await readApplicationSource();
 
-  assert.match(source, /type View = "home" \| "upload" \| "packs" \| "modes" \| "hill"/);
+  assert.match(source, /\| "hill"[\s\S]*\| "wheel"[\s\S]*\| "ranked"/);
   assert.match(source, /Create account/);
   assert.match(source, /onRegister/);
   assert.doesNotMatch(source, /AdminView|onAdmin|\/api\/admin/);
   assert.match(source, /onNavigate\("upload"\)/);
   assert.match(source, /King of the Hill/);
+  assert.match(source, /id: "ranked"/);
   assert.match(source, /YouTube Playlist/);
   assert.match(source, /YouTube Music/);
   assert.match(source, /Music Service/);

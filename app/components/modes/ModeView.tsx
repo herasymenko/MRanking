@@ -21,6 +21,13 @@ const MODES = [
     live: true,
   },
   {
+    id: "ranked",
+    title: "Ranked",
+    icon: "≋",
+    copy: "Order groups of four and build a balanced top 100.",
+    live: true,
+  },
+  {
     id: "tier",
     title: "Tier List",
     icon: "▤",
@@ -62,11 +69,13 @@ export function ModeView({
   onBack,
   onKing,
   onOpenWheel,
+  onOpenRanked,
 }: {
   selectedPack: Pack | null;
   onBack: () => void;
   onKing: () => void;
   onOpenWheel: () => void;
+  onOpenRanked: () => void;
 }) {
   const { t } = useI18n();
   return (
@@ -101,6 +110,8 @@ export function ModeView({
                 ? onKing
                 : mode.id === "wheel"
                   ? onOpenWheel
+                  : mode.id === "ranked"
+                    ? onOpenRanked
                   : undefined
             }
           >

@@ -29,6 +29,13 @@
       "when": 1785268794694,
       "tag": "0003_wheel_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786608000000,
+      "tag": "0004_ranked_mode",
+      "breakpoints": true
     }
   ]
 }
