@@ -27,16 +27,17 @@ export function PackLibraryView({
         <div>
           <div className="eyebrow">
             <span>●</span>
-            {t("YOUR LIBRARY")}
+            {t("THE PACK VAULT")}
           </div>
           <h2>{t("Your packs")}</h2>
+          <p className="page-intro">{t("Every ranking starts here. Pick a pack or bring in something new.")}</p>
         </div>
       </div>
       <div className="pack-grid">
         <button className="pack-tile add-pack-tile" onClick={onAdd}>
           <span className="add-pack-plus" aria-hidden="true">+</span>
-          <strong>{t("Add a pack")}</strong>
-          <small>{t("Upload or import a new pack.")}</small>
+          <strong>{t("Build a new pack")}</strong>
+          <small>{t("Bring playlists together and make them playable.")}</small>
           <b aria-hidden="true">↗</b>
         </button>
         {packs.map((pack) => (
@@ -45,7 +46,7 @@ export function PackLibraryView({
               <PackCover pack={pack} />
               <PackTypeBadge />
               <div className="pack-play-overlay">
-                <span>{t("Choose a mode")}</span>
+                <span>{t("Pick a game")}</span>
                 <b>↗</b>
               </div>
             </button>

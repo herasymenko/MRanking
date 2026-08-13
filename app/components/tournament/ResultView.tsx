@@ -43,7 +43,7 @@ export function ResultView({
             <span>●</span>
             {t(archived ? "Archived result" : "We have a winner")}
           </div>
-          <h2>{t("Long live the champion.")}</h2>
+          <h2>{t("The crown has a home.")}</h2>
           {completedAt && (
             <p className="result-completed">
               {t("Completed")} ·{" "}
@@ -60,7 +60,7 @@ export function ResultView({
           <div className="result-actions">
             {onAgain && (
               <button className="button primary" onClick={onAgain}>
-                {t("Play again")}
+                {t("Run it back")}
               </button>
             )}
             {archived && onDelete && (
@@ -85,7 +85,7 @@ export function ResultView({
       <TournamentBracket pack={pack} session={run.session} />
       <div className="ranking-panel">
         <div className="section-line">
-          <h3>{t("Full ranking")}</h3>
+          <h3>{t("The final order")}</h3>
           <span>{rankingIds.length}</span>
         </div>
         {rankingIds.map((id, index) => {

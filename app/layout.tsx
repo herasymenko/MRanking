@@ -40,18 +40,18 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: new URL(`${protocol}://${host}`),
-    title: "MRanking — Upload. Compare. Crown.",
-    description: "Turn playlists and collections into packs, then compare, tier, score or rank them your way.",
+    title: "MRanking — Bring the pack. Own the order.",
+    description: "Turn any playlist into a game, a winner and a ranking worth arguing about.",
     openGraph: {
-      title: "MRanking — Upload. Compare. Crown.",
-      description: "Upload one pack and explore multiple ways to compare, rank and score it.",
-      images: [{ url: "/og.png", width: 1536, height: 1024, alt: "MRanking turns one collection into multiple ranking modes." }],
+      title: "MRanking — Bring the pack. Own the order.",
+      description: "Build a pack, choose the rules and settle the ranking your way.",
+      images: [{ url: "/og-v2.png", width: 1536, height: 1024, alt: "MRanking — bring the pack and own the order." }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "MRanking — Upload. Compare. Crown.",
-      description: "Upload one pack and explore multiple ways to compare, rank and score it.",
-      images: ["/og.png"],
+      title: "MRanking — Bring the pack. Own the order.",
+      description: "Build a pack, choose the rules and settle the ranking your way.",
+      images: ["/og-v2.png"],
     },
   };
 }

@@ -81,7 +81,7 @@ export function BattleView({
         value={progress}
       />
       <div className="battle-title">
-        <h2>{t("Choose the one that stays")}</h2>
+        <h2>{t("Only one gets through")}</h2>
       </div>
       <div className="duel-board">
         <TrackChoice
@@ -122,7 +122,7 @@ export function BattleView({
           onClick={onUndo}
         >
           <span aria-hidden="true">↶</span>
-          {t("Undo")}
+          {t("Rewind")}
         </button>
         <button
           className="battle-skip"
@@ -131,7 +131,7 @@ export function BattleView({
           }
           onClick={onReshuffle}
         >
-          {t("Reshuffle pair")}
+          {t("New matchup")}
           <span aria-hidden="true">⟳</span>
         </button>
       </div>
@@ -194,7 +194,7 @@ function TrackChoice({
         </a>
       </div>
       <button className="choose-track" onClick={onPick}>
-        {t("Choose this")}
+        {t("Send it through")}
         <span>↗</span>
       </button>
     </article>

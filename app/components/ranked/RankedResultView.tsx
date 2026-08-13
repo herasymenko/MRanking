@@ -55,14 +55,14 @@ export function RankedResultView({
       <FlowBack label="Back" onClick={onBack} />
       <div className="ranked-result-hero">
         <div>
-          <div className="eyebrow"><span>●</span>{t("Ranking complete")}</div>
-          <h2>{t("Your top is ready.")}</h2>
-          <p>{t("Equal scores are ordered randomly. Drag anything you want to adjust manually.")}</p>
+          <div className="eyebrow"><span>●</span>{t("THE VERDICT IS IN")}</div>
+          <h2>{t("Your ranking just landed.")}</h2>
+          <p>{t("The algorithm built the order. Now drag anything you want to make it unmistakably yours.")}</p>
           {completedAt && (
             <small>{new Date(completedAt).toLocaleString(locale, { dateStyle: "long", timeStyle: "short" })}</small>
           )}
           <div className="result-actions">
-            {onAgain && <button className="button primary" onClick={onAgain}>{t("Play again")}</button>}
+            {onAgain && <button className="button primary" onClick={onAgain}>{t("Run it back")}</button>}
             {onDelete && <button className="button danger" onClick={onDelete}>{t("Delete history")}</button>}
           </div>
           {saving && <span className="ranked-saving">{t("Saving result…")}</span>}
@@ -83,7 +83,7 @@ export function RankedResultView({
       </div>
 
       <div className="ranked-result-toolbar">
-        <div><span>{t("MANUAL EDIT")}</span><h3>{t("Full ranking")}</h3></div>
+        <div><span>{t("YOUR FINAL SAY")}</span><h3>{t("The final order")}</h3></div>
         <button
           type="button"
           disabled={!onAdjust || saving}

@@ -277,9 +277,14 @@ export function UploadView({
         <div>
           <div className="eyebrow">
             <span>●</span>
-            {addingToPack ? t("SAME SERVICE") : `01 / ${t("INPUT")}`}
+            {addingToPack ? t("SAME SERVICE") : t("BUILD THE PACK")}
           </div>
-          <h2>{t(addingToPack ? "Add playlists" : "Choose a source")}</h2>
+          <h2>{t(addingToPack ? "Add more fuel" : "What are we ranking?")}</h2>
+          <p className="page-intro">
+            {t(addingToPack
+              ? "Stack more playlists from the same service into this pack."
+              : "Start with music today. Images, lists and more are coming next.")}
+          </p>
         </div>
       </div>
 
@@ -316,7 +321,7 @@ export function UploadView({
           />
           <div className="playlist-form-icon">{serviceIcon}</div>
           <span className="modal-kicker">{t(serviceTitle)}</span>
-          <h3>{t(servicePrompt)}</h3>
+          <h3>{t(addingToPack ? "Drop another playlist" : servicePrompt)}</h3>
           <p>{t(serviceCopy)}</p>
           <div className="url-entry">
             <input
@@ -328,7 +333,7 @@ export function UploadView({
               required
             />
             <button className="button primary" type="submit">
-              {t(addingToPack ? "Add playlist" : "Read link")}
+              {t(addingToPack ? "Add to the pack" : "Pull the playlist")}
               <span>↗</span>
             </button>
           </div>
@@ -370,7 +375,7 @@ export function UploadView({
           </div>
           <div>
             <span className="modal-kicker">{t("IMPORTING")}</span>
-            <h3>{t("Reading link")}</h3>
+            <h3>{t("Building your pack")}</h3>
             <p>
               {importProgress.total > 1
                 ? `${t("Playlist")} ${importProgress.current}/${importProgress.total}`

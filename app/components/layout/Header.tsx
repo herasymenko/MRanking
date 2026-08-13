@@ -67,7 +67,7 @@ export function Header({
           onClick={() => onNavigate("modes")}
         >
           <span>03</span>
-          {t("Modes")}
+          {t("Game modes")}
         </button>
       </nav>
       <div className="top-actions">
@@ -124,9 +124,7 @@ function Logo({ onClick }: { onClick: () => void }) {
     <button className="brand" onClick={onClick} aria-label={t("MRanking home")}>
       <LogoMark />
       <span className="brand-name">
-        M
-        <br />
-        <strong>Ranking</strong>
+        M<strong>Ranking</strong>
       </span>
     </button>
   );

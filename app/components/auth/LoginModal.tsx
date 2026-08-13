@@ -43,12 +43,13 @@ export function LoginModal({
           ×
         </button>
         <LogoMark />
-        <span className="modal-kicker">{t("YOUR PROFILE")}</span>
+        <span className="modal-kicker">{t("YOUR RANKING SPACE")}</span>
         <h2>
           {t(
-            mode === "register" ? "Create your profile" : "Sign in to continue",
+            mode === "register" ? "Claim your corner of the arena" : "Step back into the arena",
           )}
         </h2>
+        <p className="auth-intro">{t("Your packs, active runs and final rankings stay with this profile.")}</p>
         <label className="field">
           <span>{t("Nickname")}</span>
           <input
@@ -77,7 +78,7 @@ export function LoginModal({
         </label>
         {error && <div className="form-error">{error}</div>}
         <button className="button primary" disabled={busy}>
-          {busy ? "…" : t(mode === "register" ? "Create account" : "Sign in")}
+          {busy ? "…" : t(mode === "register" ? "Create my profile" : "Enter MRanking")}
           <span>↗</span>
         </button>
         <button

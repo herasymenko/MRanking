@@ -34,7 +34,7 @@ export function WheelHeader({
       <div>
         <span className="eyebrow">
           <i aria-hidden="true" />
-          {t(archived ? "Saved wheel" : "Wheel")}
+          {t(archived ? "Saved wheel" : "CHANCE WHEEL / LIVE")}
         </span>
         <h2>{pack.name}</h2>
         {completedAt && <small>{new Date(completedAt).toLocaleString()}</small>}
@@ -84,7 +84,7 @@ export function WheelToolbar({
           onClick={() => onMode("classic")}
         >
           <b>{t("Classic")}</b>
-          <small>{t("One spin. One winner.")}</small>
+          <small>{t("One spin. One final answer.")}</small>
         </button>
         <button
           className={
@@ -94,7 +94,7 @@ export function WheelToolbar({
           onClick={() => onMode("lastOneStanding")}
         >
           <b>{t("Last One Standing")}</b>
-          <small>{t("Remove each result until one remains.")}</small>
+          <small>{t("Every spin cuts one until a winner survives.")}</small>
         </button>
       </div>
 
@@ -173,7 +173,7 @@ export function WheelWinner({
         <span aria-hidden="true">★</span>
       </div>
       <div>
-        <small>{t("THE WHEEL CHOSE")}</small>
+        <small>{t("THE WHEEL HAS SPOKEN")}</small>
         <h3>{winner.title}</h3>
         <p>{winner.channel}</p>
       </div>
@@ -183,7 +183,7 @@ export function WheelWinner({
         </button>
         {!archived && (
           <button className="button ghost" onClick={onPlayAgain}>
-            {t("Spin this pack again")}
+            {t("Run it back")}
           </button>
         )}
       </div>

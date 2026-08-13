@@ -69,9 +69,10 @@ export function PackEditor({
       <div className="page-heading editor-heading">
         <div>
           <div className="eyebrow">
-            <span>●</span>02 / {t("REVIEW")}
+            <span>●</span>{t("PACK LAB / FINAL CUT")}
           </div>
-          <h2>{t("Edit imported pack")}</h2>
+          <h2>{t("Shape your pack")}</h2>
+          <p className="page-intro">{t("Name it, trim it and make every entry count before the game begins.")}</p>
         </div>
       </div>
       <div className="editor-setup">
@@ -172,7 +173,7 @@ export function PackEditor({
             disabled={!valid || saving}
             onClick={onSave}
           >
-            <strong>{saving ? "…" : t("Save pack")}</strong>
+            <strong>{saving ? "…" : t("Lock in the pack")}</strong>
             <span>↗</span>
           </button>
         </div>
@@ -180,7 +181,7 @@ export function PackEditor({
       <div className="editor-layout">
         <div className="editor-main">
           <div className="track-list-heading">
-            <span>{t("Playlist tracks")}</span>
+            <span>{t("THE CONTENDERS")}</span>
             <b>{value.items.length}</b>
           </div>
           <div className="video-review-list">
@@ -219,7 +220,7 @@ export function PackEditor({
         </div>
         <aside className="selection-sidebar">
           <section className="add-playlist-panel">
-            <span className="aside-label">{t("Music Service")}</span>
+            <span className="aside-label">{t("EXPAND THE PACK")}</span>
             <div>
               <strong>{t(sourceName(value.sourceType))}</strong>
             </div>
@@ -236,13 +237,13 @@ export function PackEditor({
               disabled={saving}
             >
               <span>+</span>
-              {t("Add another playlist")}
+              {t("Add more playlists")}
             </button>
           </section>
           <section className="selection-panel">
-            <span className="aside-label">{t("Random selection")}</span>
+            <span className="aside-label">{t("QUICK CUT")}</span>
             <h3>{selectedCount}</h3>
-            <p>{t("Choose how many tracks stay in the pack.")}</p>
+            <p>{t("Pick a size and we will deal a random cut from everything imported.")}</p>
             <div className="selection-size-grid">
               {[16, 32, 64, 128, 256, 512].map((size) => (
                 <button

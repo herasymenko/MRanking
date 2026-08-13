@@ -10,56 +10,56 @@ const MODES = [
     id: "king",
     title: "King of the Hill",
     icon: "♛",
-    copy: "Pick one of two until only one remains.",
+    copy: "Head to head. One survives. Repeat until a champion stands.",
     live: true,
   },
   {
     id: "wheel",
-    title: "Wheel",
+    title: "Chance Wheel",
     icon: "◉",
-    copy: "Spin weighted chances and let the wheel decide.",
+    copy: "Set the odds. Spin the tension. Let chance make the call.",
     live: true,
   },
   {
     id: "ranked",
-    title: "Ranked",
+    title: "Ranked 100",
     icon: "≋",
-    copy: "Order groups of four and build a balanced top 100.",
+    copy: "Order small groups and build one balanced top from best to worst.",
     live: true,
   },
   {
     id: "tier",
     title: "Tier List",
     icon: "▤",
-    copy: "Build tiers and drag every contender into place.",
+    copy: "Build your tiers. Defend every placement.",
     live: false,
   },
   {
     id: "blind",
     title: "Blind Ranking",
     icon: "?",
-    copy: "Rank without seeing what comes next.",
+    copy: "Commit to a spot before you know what comes next.",
     live: false,
   },
   {
     id: "score",
     title: "Score Everything",
     icon: "★",
-    copy: "Give every item an independent score.",
+    copy: "Score every entry. Let the numbers settle it.",
     live: false,
   },
   {
     id: "drop",
     title: "Keep or Drop",
     icon: "±",
-    copy: "Make one brutal yes-or-no decision at a time.",
+    copy: "One ruthless keep-or-cut decision at a time.",
     live: false,
   },
   {
     id: "bracket",
     title: "Single Elimination",
     icon: "⌘",
-    copy: "Classic fixed tournament bracket.",
+    copy: "A clean bracket. No second chances.",
     live: false,
   },
 ];
@@ -84,9 +84,10 @@ export function ModeView({
       <div className="page-heading">
         <div>
           <div className="eyebrow">
-            <span>●</span>03 / {t("FORMAT")}
+            <span>●</span>{t("PICK YOUR GAME")}
           </div>
-          <h2>{t("Choose a mode")}</h2>
+          <h2>{t("Choose the rules")}</h2>
+          <p className="page-intro">{t("One pack. Three completely different ways to settle the ranking.")}</p>
         </div>
       </div>
       {selectedPack && (
@@ -121,7 +122,7 @@ export function ModeView({
               <h3>{t(mode.title)}</h3>
               <p>{t(mode.copy)}</p>
             </div>
-            <b>{t(mode.live ? "PLAY NOW" : "COMING SOON")}</b>
+            <b>{t(mode.live ? "LAUNCH MODE" : "IN THE LAB")}</b>
           </button>
         ))}
       </div>

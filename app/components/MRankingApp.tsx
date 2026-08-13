@@ -387,9 +387,9 @@ export function MRankingApp() {
           />
         )}
         <footer>
-          <span>MRanking / {t("Tournament platform")}</span>
+          <span>MRanking / {t("THE RANKING PLAYGROUND")}</span>
           <span>
-            {t("UPLOAD")} → {t("COMPARE")} → {t("CROWN")}
+            {t("LOAD")} → {t("DECIDE")} → {t("RANK")}
           </span>
           <span>© 2026</span>
         </footer>

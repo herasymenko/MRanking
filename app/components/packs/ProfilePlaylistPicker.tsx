@@ -55,7 +55,7 @@ export function ProfilePlaylistPicker({
           )}
         </div>
         <div className="profile-import-copy">
-          <span className="modal-kicker">{t("PUBLIC PROFILE")}</span>
+          <span className="modal-kicker">{t("PLAYLIST VAULT")}</span>
           <h3>{profile.title}</h3>
           <p>
             {profile.playlists.length} {t("public playlists")}
@@ -71,10 +71,10 @@ export function ProfilePlaylistPicker({
                 )
               }
             >
-              {t("Select all")}
+              {t("Grab everything")}
             </button>
             <button type="button" onClick={() => setSelectedIds([])}>
-              {t("Clear")}
+              {t("Clear the board")}
             </button>
           </div>
         )}
@@ -137,7 +137,7 @@ export function ProfilePlaylistPicker({
           <div className="profile-import-selection">
             <p>
               <strong>{selectedPlaylists.length}</strong>
-              <span>{t("playlists selected")}</span>
+              <span>{t("playlists locked in")}</span>
             </p>
             <button
               type="button"
@@ -145,7 +145,7 @@ export function ProfilePlaylistPicker({
               disabled={selectedPlaylists.length === 0 || importing}
               onClick={() => onChooseMany(selectedPlaylists)}
             >
-              {importing ? "…" : t("Import selected")}
+              {importing ? "…" : t("Build one pack")}
               <span>↗</span>
             </button>
           </div>

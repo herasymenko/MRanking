@@ -82,7 +82,7 @@ test("ships the redesigned application shell", async () => {
     readApplicationSource(),
   ]);
   assert.match(page, /MRanking — Upload\. Compare\. Crown\./);
-  assert.match(layout, /multiple ranking modes/);
+  assert.match(layout, /ranking worth arguing about/);
   assert.match(client, /LOADING ARENA/);
   assert.doesNotMatch(
     `${page}${layout}${client}`,
@@ -185,7 +185,7 @@ test("client includes the private playlist-to-tournament flow", async () => {
   assert.doesNotMatch(source, /keyName="A"|className="choice-key"/);
   assert.match(kingLibrary, /className="pack-tile add-pack-tile"/);
   assert.match(kingLibrary, /onClick=\{onPacks\}/);
-  assert.match(kingLibrary, /Add a pack/);
+  assert.match(kingLibrary, /Build a new pack/);
   assert.match(kingLibrary, /<FlowBack label="Back"/);
   assert.doesNotMatch(source, /DEMO_PACKS|VLAD_HOBBIES|POP_PUNK_TOP_64/);
 });

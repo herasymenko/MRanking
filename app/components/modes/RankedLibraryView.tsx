@@ -36,16 +36,17 @@ export function RankedLibraryView({
       <FlowBack label="Back" onClick={onBack} />
       <div className="page-heading">
         <div>
-          <div className="eyebrow"><span>●</span>{t("Ranked")}</div>
-          <h2>{t("Choose a pack")}</h2>
+          <div className="eyebrow"><span>●</span>{t("RANKED 100 / PACK SELECT")}</div>
+          <h2>{t("Choose your field")}</h2>
+          <p className="page-intro">{t("Pick a pack and turn quick group decisions into one balanced top.")}</p>
         </div>
       </div>
 
       <div className="pack-grid mode-pack-grid">
         <button className="pack-tile add-pack-tile" onClick={onUpload}>
           <span className="add-pack-plus" aria-hidden="true">+</span>
-          <strong>{t("Add a pack")}</strong>
-          <small>{t("Upload or import a new pack.")}</small>
+          <strong>{t("Build a new pack")}</strong>
+          <small>{t("Bring playlists together and make them playable.")}</small>
           <b aria-hidden="true">↗</b>
         </button>
         {packs.map((pack) => {
@@ -58,7 +59,7 @@ export function RankedLibraryView({
                 <PackTypeBadge />
                 {run && <span className="ranked-resume-badge">{t("IN PROGRESS")}</span>}
                 <div className="pack-play-overlay">
-                  <span>{t(run ? "Continue" : "PLAY NOW")}</span><b>↗</b>
+                  <span>{t(run ? "Continue the ranking" : "BUILD THE TOP")}</span><b>↗</b>
                 </div>
               </button>
               <div className="pack-tile-body">

@@ -38,9 +38,10 @@ export function KingLibraryView({
         <div>
           <div className="eyebrow">
             <span>●</span>
-            {t("King of the Hill")}
+            {t("KING OF THE HILL / PACK SELECT")}
           </div>
-          <h2>{t("Choose a pack")}</h2>
+          <h2>{t("Choose the contenders")}</h2>
+          <p className="page-intro">{t("Pick the pack that will fight all the way down to one champion.")}</p>
         </div>
       </div>
       {packs.length === 0 ? (
@@ -58,8 +59,8 @@ export function KingLibraryView({
             <span className="add-pack-plus" aria-hidden="true">
               +
             </span>
-            <strong>{t("Add a pack")}</strong>
-            <small>{t("Upload or import a new pack.")}</small>
+            <strong>{t("Build a new pack")}</strong>
+            <small>{t("Bring playlists together and make them playable.")}</small>
             <b aria-hidden="true">↗</b>
           </button>
           {packs.map((pack) => (
@@ -73,7 +74,7 @@ export function KingLibraryView({
                 <PackCover pack={pack} />
                 <PackTypeBadge />
                 <div className="pack-play-overlay">
-                  <span>{t(runs[pack.id] ? "Continue" : "PLAY NOW")}</span>
+                  <span>{t(runs[pack.id] ? "Continue the run" : "START THE BATTLE")}</span>
                   <b>↗</b>
                 </div>
               </button>

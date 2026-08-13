@@ -30,7 +30,7 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(app, /<RankedAppSection/);
   assert.match(app, /useRankedRun/);
   assert.match(game, /draggable/);
-  assert.match(game, /Current top 100/);
+  assert.match(game, /Your top right now/);
   assert.match(game, /confirmRankedOrder/);
   assert.match(result, /setManualRankedOrder/);
   assert.match(result, /Reset to automatic/);

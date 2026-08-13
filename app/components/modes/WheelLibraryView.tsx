@@ -46,9 +46,10 @@ export function WheelLibraryView({
         <div>
           <div className="eyebrow">
             <span>●</span>
-            {t("Wheel")}
+            {t("CHANCE WHEEL / PACK SELECT")}
           </div>
-          <h2>{t("Choose a pack")}</h2>
+          <h2>{t("Choose the odds")}</h2>
+          <p className="page-intro">{t("Pick a pack, tune every chance and let the wheel make the call.")}</p>
         </div>
       </div>
 
@@ -57,8 +58,8 @@ export function WheelLibraryView({
           <span className="add-pack-plus" aria-hidden="true">
             +
           </span>
-          <strong>{t("Add a pack")}</strong>
-          <small>{t("Upload or import a new pack.")}</small>
+          <strong>{t("Build a new pack")}</strong>
+          <small>{t("Bring playlists together and make them playable.")}</small>
           <b aria-hidden="true">↗</b>
         </button>
 
@@ -81,7 +82,7 @@ export function WheelLibraryView({
                   </span>
                 )}
                 <div className="pack-play-overlay">
-                  <span>{t(run ? "Resume wheel" : "PLAY NOW")}</span>
+                  <span>{t(run ? "Resume the spin" : "SPIN THIS PACK")}</span>
                   <b>↗</b>
                 </div>
               </button>

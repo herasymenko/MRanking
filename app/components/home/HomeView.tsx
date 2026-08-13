@@ -9,29 +9,32 @@ export function HomeView({ onStart }: { onStart: () => void }) {
       <div className="home-copy">
         <div className="eyebrow">
           <span>●</span>
-          {t("TOURNAMENT ENGINE")}
+          {t("THE RANKING PLAYGROUND")}
         </div>
         <h1>
-          {t("Rate it.")}
+          {t("Bring the pack.")}
           <br />
-          {t("Run it.")}
+          {t("Make the call.")}
           <br />
-          <em>{t("Crown it.")}</em>
+          <em>{t("Own the order.")}</em>
         </h1>
+        <p className="home-deck">
+          {t("Turn any playlist into a game, a winner and a ranking worth arguing about.")}
+        </p>
         <button className="button primary jumbo" onClick={onStart}>
-          {t("Start a tournament")}
+          {t("Enter the arena")}
           <span>↗</span>
         </button>
       </div>
       <ChoicePreview />
       <div className="home-flow">
-        <span>01 {t("UPLOAD")}</span>
+        <span>01 {t("LOAD A PACK")}</span>
         <i>→</i>
-        <span>02 {t("SPLIT")}</span>
+        <span>02 {t("PICK THE RULES")}</span>
         <i>→</i>
-        <span>03 {t("COMPARE")}</span>
+        <span>03 {t("MAKE THE CALLS")}</span>
         <i>→</i>
-        <span>04 {t("CROWN")}</span>
+        <span>04 {t("OWN THE RANKING")}</span>
       </div>
     </section>
   );
@@ -45,7 +48,7 @@ function ChoicePreview() {
       aria-label={t("Choose the one that stays")}
     >
       <header className="preview-head">
-        <span>{t("COMPARE")}</span>
+        <span>{t("LIVE DECISION")}</span>
         <b>05 / 32</b>
       </header>
       <div className="preview-duel">
@@ -63,7 +66,7 @@ function ChoicePreview() {
               <i />
             </div>
             <div className="preview-pick">
-              <span>{t("Choose this")}</span>
+              <span>{t("Send it through")}</span>
               <b>↗</b>
             </div>
           </article>
@@ -72,8 +75,8 @@ function ChoicePreview() {
       </div>
       <div className="preview-ranking">
         <header>
-          <span>{t("Full ranking")}</span>
-          <b>{t("READY")}</b>
+          <span>{t("THE BOARD")}</span>
+          <b>{t("UPDATING LIVE")}</b>
         </header>
         {[96, 84, 71].map((score, index) => (
           <div className={`preview-rank-row preview-rank-${index + 1}`} key={score}>

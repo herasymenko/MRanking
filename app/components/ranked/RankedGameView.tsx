@@ -60,7 +60,7 @@ export function RankedGameView({
           <span className="ranked-phase">
             {t(run.state.phase === "qualification" ? "Qualification" : "Top 100 ranking")}
           </span>
-          <h2>{t("Build your order")}</h2>
+          <h2>{t("Put them in their place")}</h2>
         </div>
         <div className="ranked-game-meta">
           <span>{pack.name}</span>
@@ -74,7 +74,7 @@ export function RankedGameView({
             onClick={() => onChange(undoRankedOrder(run))}
           >↶ {t("Undo")}</button>
           <button type="button" className="ranked-cancel" onClick={onCancel}>
-            {t("Cancel run")}
+            {t("Leave the ranking")}
           </button>
         </div>
       </header>
@@ -84,7 +84,7 @@ export function RankedGameView({
         <div className="ranked-order-panel">
           <div className="ranked-instruction">
             <span>{t("BEST")}</span>
-            <p>{t("Drag the four items from best to worst.")}</p>
+            <p>{t("Drag the contenders into your order. Best at the top. No ties.")}</p>
             <span>{t("WORST")}</span>
           </div>
           <div className="ranked-group-list">
@@ -146,13 +146,13 @@ export function RankedGameView({
             })}
           </div>
           <button type="button" className="ranked-confirm" onClick={confirm}>
-            <span>{t("Confirm order")}</span><b>↗</b>
+            <span>{t("Lock this order")}</span><b>↗</b>
           </button>
         </div>
 
         <aside className="ranked-live-top">
           <div className="ranked-live-head">
-            <div><span>{t("LIVE")}</span><h3>{t("Current top 100")}</h3></div>
+            <div><span>{t("LIVE BOARD")}</span><h3>{t("Your top right now")}</h3></div>
             <b>{leaders.length}</b>
           </div>
           <div className="ranked-live-list">

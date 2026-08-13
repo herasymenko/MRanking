@@ -33,7 +33,7 @@ export function MusicSourceChooser({
             disabled={!tile.live}
           >
             <span className="source-status">
-              {t(tile.live ? "WORKS NOW" : "COMING SOON")}
+              {t(tile.live ? "READY TO IMPORT" : "IN THE LAB")}
             </span>
             <i>{tile.icon}</i>
             <h3>{t(tile.title)}</h3>
@@ -52,9 +52,9 @@ export function MusicSourceChooser({
     <div className="music-service-stage">
       <FlowBack label="Back" onClick={onBack} />
       <div className="service-heading">
-        <span className="modal-kicker">02 / {t("Music Service")}</span>
-        <h3>{t("Choose a music service")}</h3>
-        <p>{t("Select where your playlist lives.")}</p>
+        <span className="modal-kicker">02 / {t("PICK THE PLATFORM")}</span>
+        <h3>{t("Where does it live?")}</h3>
+        <p>{t("Choose the service and we will turn its playlists into one pack.")}</p>
       </div>
       <div className="source-grid music-service-grid">
         {MUSIC_SERVICE_TILES.map((tile) => (
@@ -67,7 +67,7 @@ export function MusicSourceChooser({
             disabled={!tile.live}
           >
             <span className="source-status">
-              {t(tile.live ? "WORKS NOW" : "COMING SOON")}
+              {t(tile.live ? "READY TO IMPORT" : "IN THE LAB")}
             </span>
             <i>{tile.icon}</i>
             <h3>{t(tile.title)}</h3>
