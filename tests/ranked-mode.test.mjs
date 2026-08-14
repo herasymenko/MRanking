@@ -91,6 +91,9 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(game, /NEXT · \{selected\} SAVED/);
   assert.match(game, /qualificationSelection/);
   assert.match(game, /ranked-keep-toggle/);
+  assert.match(game, /qualificationSelection\.includes\(id\) \? "KEPT" : "KEEP"/);
+  assert.match(game, /onPointerDown=\{isQualification[\s\S]*?undefined/);
+  assert.doesNotMatch(game, /ranked-qualifier-tools/);
   assert.match(game, /2_000/);
   assert.match(game, /ranked-stage-transition/);
   assert.match(game, /playSound\("next"\)/);
@@ -152,6 +155,10 @@ test("ranked mode is wired through UI, persistence and localization", async () =
   assert.match(styles, /has-active-player/);
   assert.doesNotMatch(styles, /ranked-match-shift|ranked-qualifier-prompt/);
   assert.match(styles, /ranked-keep-toggle/);
+  assert.match(styles, /ranked-keep-toggle\[aria-pressed="true"\]/);
+  assert.match(styles, /ranked-workspace\.qualification \.ranked-choice-row[^}]*grid-template-columns: minmax\(0,1fr\) 76px/);
+  assert.doesNotMatch(styles, /ranked-qualifier-tools/);
+  assert.match(styles, /topbar-game\.open[^}]*ranked-game-view > \.ranked-sound-control/);
   assert.match(styles, /ranked-stage-transition/);
   assert.match(styles, /ranked-result-workspace/);
   assert.match(styles, /@media \(hover: none\), \(pointer: coarse\)/);

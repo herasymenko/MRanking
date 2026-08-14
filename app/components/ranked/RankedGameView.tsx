@@ -210,7 +210,9 @@ export function RankedGameView({
                       }
                     }}
                     className={`ranked-choice-row ${player?.itemId === id ? "active" : ""} ${dragged?.source === "group" && dragged.itemId === id ? "dragging" : ""} ${qualificationSelection.includes(id) ? "qualifier-selected" : ""}`}
-                    onPointerDown={(event) => beginPointerDrag(event, id, "group")}
+                    onPointerDown={isQualification
+                      ? undefined
+                      : (event) => beginPointerDrag(event, id, "group")}
                   >
                     <RemoteImage
                       className="ranked-choice-art"
@@ -244,23 +246,20 @@ export function RankedGameView({
                       <small>{t(player?.itemId === id ? "STOP" : "PLAY")}</small>
                     </button>
                     {isQualification ? (
-                      <div className="ranked-qualifier-tools">
-                        <button
-                          type="button"
-                          className="ranked-keep-toggle"
-                          aria-pressed={qualificationSelection.includes(id)}
-                          aria-label={t("Keep {name}", { name: item.title })}
-                          onClick={() => setQualificationSelection((current) =>
-                            current.includes(id)
-                              ? current.filter((candidate) => candidate !== id)
-                              : [...current, id],
-                          )}
-                        >
-                          <span aria-hidden="true">✓</span>
-                          <small>{t("KEEP")}</small>
-                        </button>
-                        <span className="ranked-drag-handle" title={t("Drag to reorder")}>⠿</span>
-                      </div>
+                      <button
+                        type="button"
+                        className="ranked-keep-toggle"
+                        aria-pressed={qualificationSelection.includes(id)}
+                        aria-label={t("Keep {name}", { name: item.title })}
+                        onClick={() => setQualificationSelection((current) =>
+                          current.includes(id)
+                            ? current.filter((candidate) => candidate !== id)
+                            : [...current, id],
+                        )}
+                      >
+                        <span aria-hidden="true">✓</span>
+                        <small>{t(qualificationSelection.includes(id) ? "KEPT" : "KEEP")}</small>
+                      </button>
                     ) : (
                       <span className="ranked-drag-handle" title={t("Drag to reorder")}>⠿</span>
                     )}

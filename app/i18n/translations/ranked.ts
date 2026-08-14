@@ -66,6 +66,7 @@ export const RANKED_TRANSLATIONS: Record<"ru" | "uk", Record<string, string>> = 
     "Only equal scores can trade places": "Менять местами можно только позиции с равными очками",
     "Drag to reorder or play": "Перетащить для перестановки или в плеер",
     "Drag to player": "Перетащить в плеер",
+    KEPT: "ВЫБРАНО",
   },
   uk: {
     Ranked: "Рейтинг",
@@ -134,5 +135,6 @@ export const RANKED_TRANSLATIONS: Record<"ru" | "uk", Record<string, string>> = 
     "Only equal scores can trade places": "Міняти місцями можна лише позиції з однаковими балами",
     "Drag to reorder or play": "Перетягнути для перестановки або у плеєр",
     "Drag to player": "Перетягнути у плеєр",
+    KEPT: "ОБРАНО",
   },
 };
